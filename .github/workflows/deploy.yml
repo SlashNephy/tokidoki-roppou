@@ -1,0 +1,53 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - main
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions: { }
+
+jobs:
+  firebase-app-distribution:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    environment: release-staging
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+      - run: echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      - run: echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > firebase-service-account.json
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      - run: echo "$ANDROID_KEYSTORE" | base64 --decode > local.jks
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      - run: |
+          cat >> keystore.properties << EOF
+          android_keystore_path=$ANDROID_KEYSTORE_PATH
+          android_keystore_password=$ANDROID_KEYSTORE_PASSWORD
+          android_keystore_alias=$ANDROID_KEYSTORE_ALIAS
+          android_keystore_alias_password=$ANDROID_KEYSTORE_ALIAS_PASSWORD
+          EOF
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/local.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          ANDROID_KEYSTORE_ALIAS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_ALIAS_PASSWORD }}
+      - run: git log -1 --pretty=short > release_notes.txt
+      - run: ./gradlew assembleRelease appDistributionUploadRelease --releaseNotesFile "$RELEASE_NOTES_FILE" -PversionCode="$VERSION_CODE"
+        env:
+          RELEASE_NOTES_FILE: ${{ github.workspace }}/release_notes.txt
+          VERSION_CODE: ${{ github.run_number }}

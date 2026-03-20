@@ -1,8 +1,20 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("tokidokiroppou.android.application")
     id("tokidokiroppou.compose")
     id("tokidokiroppou.hilt")
     id("tokidokiroppou.kotlin.serialization")
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.appdistribution)
+}
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
 }
 
 android {
@@ -10,8 +22,8 @@ android {
 
     defaultConfig {
         applicationId = "blue.starry.tokidokiroppou"
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = project.findProperty("versionCode")?.toString()?.toIntOrNull() ?: 1
+        versionName = project.findProperty("versionName")?.toString() ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -24,6 +36,17 @@ android {
         sarifReport = true
     }
 
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = file(keystoreProperties["android_keystore_path"] as String)
+                storePassword = keystoreProperties["android_keystore_password"] as String
+                keyAlias = keystoreProperties["android_keystore_alias"] as String
+                keyPassword = keystoreProperties["android_keystore_alias_password"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -31,7 +54,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
+    }
+
+    firebaseAppDistribution {
+        artifactType = "APK"
+        serviceCredentialsFile = rootProject.file("firebase-service-account.json").path
     }
 }
 
