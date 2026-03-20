@@ -10,5 +10,6 @@ data class ArticleEntity(
     val lawCode: String,
     val articleNumber: String,
     val articleTitle: String,
+    val articleCaption: String,
     val paragraphsJson: String,
 )

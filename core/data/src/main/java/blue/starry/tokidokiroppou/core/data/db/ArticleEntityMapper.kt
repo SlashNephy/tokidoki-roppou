@@ -21,6 +21,7 @@ fun Article.toEntity(): ArticleEntity {
         lawCode = lawCode.name,
         articleNumber = articleNumber,
         articleTitle = articleTitle,
+        articleCaption = articleCaption,
         paragraphsJson = paragraphsJson,
     )
 }
@@ -35,6 +36,7 @@ fun ArticleEntity.toDomain(): Article? {
         lawCode = lawCode,
         articleNumber = articleNumber,
         articleTitle = articleTitle,
+        articleCaption = articleCaption,
         paragraphs = paragraphs.map { Article.Paragraph(it.number, it.text) },
     )
 }

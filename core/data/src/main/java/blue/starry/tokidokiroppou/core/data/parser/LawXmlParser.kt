@@ -19,12 +19,14 @@ class LawXmlParser @Inject constructor() {
 
         var currentArticleNumber: String? = null
         var currentArticleTitle: String? = null
+        var currentArticleCaption: String? = null
         var currentParagraphs = mutableListOf<Article.Paragraph>()
         var currentParagraphNum = 0
         var currentText = StringBuilder()
         var insideArticle = false
         var insideParagraphSentence = false
         var insideArticleTitle = false
+        var insideArticleCaption = false
         var insideItemSentence = false
         var insideItemTitle = false
         var currentItemTitle = ""
@@ -40,12 +42,19 @@ class LawXmlParser @Inject constructor() {
                             insideArticle = true
                             currentArticleNumber = parser.getAttributeValue(null, "Num") ?: ""
                             currentArticleTitle = null
+                            currentArticleCaption = null
                             currentParagraphs = mutableListOf()
                             currentParagraphNum = 0
                         }
                         "ArticleTitle" -> {
                             if (insideArticle) {
                                 insideArticleTitle = true
+                                currentText = StringBuilder()
+                            }
+                        }
+                        "ArticleCaption" -> {
+                            if (insideArticle) {
+                                insideArticleCaption = true
                                 currentText = StringBuilder()
                             }
                         }
@@ -86,6 +95,7 @@ class LawXmlParser @Inject constructor() {
                     if (text.isNotEmpty()) {
                         when {
                             insideArticleTitle -> currentText.append(text)
+                            insideArticleCaption -> currentText.append(text)
                             insideParagraphSentence -> currentText.append(text)
                             insideItemTitle -> currentText.append(text)
                             insideItemSentence -> currentItemText.append(text)
@@ -101,6 +111,7 @@ class LawXmlParser @Inject constructor() {
                                         lawCode = lawCode,
                                         articleNumber = currentArticleNumber ?: "",
                                         articleTitle = currentArticleTitle ?: "",
+                                        articleCaption = currentArticleCaption ?: "",
                                         paragraphs = currentParagraphs.toList(),
                                     )
                                 )
@@ -111,6 +122,12 @@ class LawXmlParser @Inject constructor() {
                             if (insideArticleTitle) {
                                 currentArticleTitle = currentText.toString()
                                 insideArticleTitle = false
+                            }
+                        }
+                        "ArticleCaption" -> {
+                            if (insideArticleCaption) {
+                                currentArticleCaption = currentText.toString()
+                                insideArticleCaption = false
                             }
                         }
                         "ParagraphSentence" -> {
