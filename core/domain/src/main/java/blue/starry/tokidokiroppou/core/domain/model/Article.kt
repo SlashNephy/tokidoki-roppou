@@ -4,6 +4,7 @@ data class Article(
     val lawCode: LawCode,
     val articleNumber: String,
     val articleTitle: String,
+    val articleCaption: String,
     val paragraphs: List<Paragraph>,
 ) {
     data class Paragraph(
@@ -12,7 +13,11 @@ data class Article(
     )
 
     val displayTitle: String
-        get() = "${lawCode.shortName} $articleTitle"
+        get() = if (articleCaption.isNotEmpty()) {
+            "$articleTitle $articleCaption"
+        } else {
+            "$articleTitle"
+        }
 
     val fullText: String
         get() = paragraphs.joinToString("\n") { paragraph ->
