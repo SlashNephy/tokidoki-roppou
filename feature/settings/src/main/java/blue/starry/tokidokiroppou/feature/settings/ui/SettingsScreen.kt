@@ -2,8 +2,11 @@ package blue.starry.tokidokiroppou.feature.settings.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -16,6 +19,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material3.Scaffold
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +43,7 @@ fun SettingsScreen(
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val lawMetadata by viewModel.lawMetadata.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     Scaffold { innerPadding ->
         val currentSettings = settings
@@ -55,10 +60,12 @@ fun SettingsScreen(
             SettingsContent(
                 settings = currentSettings,
                 lawMetadata = lawMetadata,
+                isRefreshing = isRefreshing,
                 onNotificationEnabledChanged = viewModel::setNotificationEnabled,
                 onIntervalChanged = viewModel::setNotificationInterval,
                 onLawCodeEnabledChanged = viewModel::setLawCodeEnabled,
                 onUseHalfWidthParenthesesChanged = viewModel::setUseHalfWidthParentheses,
+                onClearCacheAndRefresh = viewModel::clearCacheAndRefresh,
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -69,10 +76,12 @@ fun SettingsScreen(
 private fun SettingsContent(
     settings: ApplicationSettings,
     lawMetadata: Map<LawCode, LawMetadata>,
+    isRefreshing: Boolean,
     onNotificationEnabledChanged: (Boolean) -> Unit,
     onIntervalChanged: (Int) -> Unit,
     onLawCodeEnabledChanged: (LawCode, Boolean) -> Unit,
     onUseHalfWidthParenthesesChanged: (Boolean) -> Unit,
+    onClearCacheAndRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier) {
@@ -175,6 +184,35 @@ private fun SettingsContent(
                                 onLawCodeEnabledChanged(lawCode, !isEnabled)
                             },
                         )
+                    }
+                }
+            }
+        }
+
+        item(key = "cache_actions") {
+            SettingSection(title = "データ") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    Button(
+                        onClick = onClearCacheAndRefresh,
+                        enabled = !isRefreshing,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        if (isRefreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Text(
+                                text = "ダウンロード中…",
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        } else {
+                            Text("キャッシュを破棄して再ダウンロード")
+                        }
                     }
                 }
             }

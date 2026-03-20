@@ -97,6 +97,12 @@ class LawRepositoryImpl @Inject constructor(
         }
     }
 
+    suspend fun clearCache() {
+        articleDao.deleteAll()
+        lawMetadataDao.deleteAll()
+        Timber.d("Cleared all cached articles and metadata")
+    }
+
     suspend fun isCacheAvailable(): Boolean {
         return articleDao.countAll() > 0
     }

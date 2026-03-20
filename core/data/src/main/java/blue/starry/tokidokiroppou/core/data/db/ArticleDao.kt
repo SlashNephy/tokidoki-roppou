@@ -22,6 +22,9 @@ interface ArticleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(articles: List<ArticleEntity>)
 
+    @Query("DELETE FROM articles")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM articles")
     suspend fun countAll(): Int
 }
