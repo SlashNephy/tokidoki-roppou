@@ -106,15 +106,20 @@ class LawXmlParser @Inject constructor() {
                     when (parser.name) {
                         "Article" -> {
                             if (insideArticle && currentArticleTitle != null && currentParagraphs.isNotEmpty()) {
-                                articles.add(
-                                    Article(
-                                        lawCode = lawCode,
-                                        articleNumber = currentArticleNumber ?: "",
-                                        articleTitle = currentArticleTitle ?: "",
-                                        articleCaption = currentArticleCaption ?: "",
-                                        paragraphs = currentParagraphs.toList(),
+                                // 「削除」のみの条文を除外
+                                val isDeleted = currentParagraphs.size == 1 &&
+                                    currentParagraphs.first().text.trim() == "削除"
+                                if (!isDeleted) {
+                                    articles.add(
+                                        Article(
+                                            lawCode = lawCode,
+                                            articleNumber = currentArticleNumber ?: "",
+                                            articleTitle = currentArticleTitle ?: "",
+                                            articleCaption = currentArticleCaption ?: "",
+                                            paragraphs = currentParagraphs.toList(),
+                                        )
                                     )
-                                )
+                                }
                             }
                             insideArticle = false
                         }
@@ -133,7 +138,7 @@ class LawXmlParser @Inject constructor() {
                         "ParagraphSentence" -> {
                             if (insideParagraphSentence) {
                                 val text = currentText.toString()
-                                if (text.isNotEmpty()) {
+                                if (text.isNotEmpty() && text.trim() != "略") {
                                     currentParagraphs.add(
                                         Article.Paragraph(
                                             number = currentParagraphNum,
@@ -153,7 +158,7 @@ class LawXmlParser @Inject constructor() {
                         "ItemSentence" -> {
                             if (insideItemSentence) {
                                 val text = currentItemText.toString()
-                                if (text.isNotEmpty()) {
+                                if (text.isNotEmpty() && text.trim() != "略") {
                                     val lastParagraph = currentParagraphs.lastOrNull()
                                     if (lastParagraph != null) {
                                         currentParagraphs[currentParagraphs.lastIndex] =
