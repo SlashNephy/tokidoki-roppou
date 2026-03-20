@@ -45,7 +45,8 @@ object DataProvidesModule {
             context,
             AppDatabase::class.java,
             "tokidoki_roppou.db",
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

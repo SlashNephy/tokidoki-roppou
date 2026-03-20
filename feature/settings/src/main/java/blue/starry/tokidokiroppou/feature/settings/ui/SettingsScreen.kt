@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
+import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.ui.component.SettingItem
 import blue.starry.tokidokiroppou.core.ui.component.SettingSection
@@ -132,25 +133,29 @@ private fun SettingsContent(
             }
         }
 
-        item {
-            SettingSection(title = "法令") {
-                LawCode.entries.forEach { lawCode ->
-                    val isEnabled = lawCode in settings.enabledLawCodes
-                    SettingItem(
-                        headline = lawCode.displayName,
-                        leadingIcon = Icons.Default.Book,
-                        trailing = {
-                            Checkbox(
-                                checked = isEnabled,
-                                onCheckedChange = { checked ->
-                                    onLawCodeEnabledChanged(lawCode, checked)
-                                },
-                            )
-                        },
-                        onClick = {
-                            onLawCodeEnabledChanged(lawCode, !isEnabled)
-                        },
-                    )
+        val lawCodesByCategory = LawCode.entries.groupBy { it.category }
+        LawCategory.entries.forEach { category ->
+            val lawCodes = lawCodesByCategory[category] ?: return@forEach
+            item(key = category.name) {
+                SettingSection(title = category.displayName) {
+                    lawCodes.forEach { lawCode ->
+                        val isEnabled = lawCode in settings.enabledLawCodes
+                        SettingItem(
+                            headline = lawCode.displayName,
+                            leadingIcon = Icons.Default.Book,
+                            trailing = {
+                                Checkbox(
+                                    checked = isEnabled,
+                                    onCheckedChange = { checked ->
+                                        onLawCodeEnabledChanged(lawCode, checked)
+                                    },
+                                )
+                            },
+                            onClick = {
+                                onLawCodeEnabledChanged(lawCode, !isEnabled)
+                            },
+                        )
+                    }
                 }
             }
         }
