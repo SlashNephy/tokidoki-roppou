@@ -27,4 +27,18 @@ data class Article(
                 "${paragraph.number}　${paragraph.text}"
             }
         }
+
+    fun displayTitle(useHalfWidthParentheses: Boolean): String {
+        val title = displayTitle
+        return if (useHalfWidthParentheses) title.normalizeParentheses() else title
+    }
+
+    fun fullText(useHalfWidthParentheses: Boolean): String {
+        val text = fullText
+        return if (useHalfWidthParentheses) text.normalizeParentheses() else text
+    }
+}
+
+private fun String.normalizeParentheses(): String {
+    return replace('（', '(').replace('）', ')')
 }

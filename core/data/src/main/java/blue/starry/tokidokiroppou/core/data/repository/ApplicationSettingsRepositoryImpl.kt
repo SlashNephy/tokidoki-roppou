@@ -54,6 +54,12 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun setUseHalfWidthParentheses(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_USE_HALF_WIDTH_PARENTHESES] = enabled
+        }
+    }
+
     private fun Preferences.toApplicationSettings(): ApplicationSettings {
         val enabledCodes = this[KEY_ENABLED_LAW_CODES]
             ?.mapNotNull { name ->
@@ -66,6 +72,7 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
             notificationIntervalMinutes = this[KEY_NOTIFICATION_INTERVAL] ?: 60,
             enabledLawCodes = enabledCodes,
             isNotificationEnabled = this[KEY_NOTIFICATION_ENABLED] ?: true,
+            useHalfWidthParentheses = this[KEY_USE_HALF_WIDTH_PARENTHESES] ?: false,
         )
     }
 
@@ -73,5 +80,6 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
         private val KEY_NOTIFICATION_INTERVAL = intPreferencesKey("notification_interval")
         private val KEY_NOTIFICATION_ENABLED = booleanPreferencesKey("notification_enabled")
         private val KEY_ENABLED_LAW_CODES = stringSetPreferencesKey("enabled_law_codes")
+        private val KEY_USE_HALF_WIDTH_PARENTHESES = booleanPreferencesKey("use_half_width_parentheses")
     }
 }
