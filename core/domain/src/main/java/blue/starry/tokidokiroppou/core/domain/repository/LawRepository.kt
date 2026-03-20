@@ -10,5 +10,7 @@ interface LawRepository {
 
     suspend fun getRandomArticle(lawCodes: Set<LawCode>): Article?
 
+    suspend fun getArticle(lawCode: LawCode, articleNumber: String): Article?
+
     fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>>
 }

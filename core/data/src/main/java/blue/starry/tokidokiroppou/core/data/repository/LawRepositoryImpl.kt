@@ -48,6 +48,10 @@ class LawRepositoryImpl @Inject constructor(
         return articles.randomOrNull()
     }
 
+    override suspend fun getArticle(lawCode: LawCode, articleNumber: String): Article? {
+        return articleDao.getByLawCodeAndArticleNumber(lawCode.name, articleNumber)?.toDomain()
+    }
+
     override fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>> {
         return lawMetadataDao.observeAll().map { entities ->
             entities.mapNotNull { entity ->

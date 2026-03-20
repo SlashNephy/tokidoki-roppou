@@ -13,6 +13,9 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE lawCode IN (:lawCodes) ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomByLawCodes(lawCodes: List<String>): ArticleEntity?
 
+    @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber = :articleNumber LIMIT 1")
+    suspend fun getByLawCodeAndArticleNumber(lawCode: String, articleNumber: String): ArticleEntity?
+
     @Query("SELECT COUNT(*) FROM articles WHERE lawCode = :lawCode")
     suspend fun countByLawCode(lawCode: String): Int
 
