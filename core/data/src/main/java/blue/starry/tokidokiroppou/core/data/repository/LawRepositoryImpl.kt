@@ -6,7 +6,7 @@ import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataEntity
 import blue.starry.tokidokiroppou.core.data.db.toDomain
 import blue.starry.tokidokiroppou.core.data.db.toEntity
-import blue.starry.tokidokiroppou.core.data.parser.LawXmlParser
+import blue.starry.tokidokiroppou.core.data.parser.LawJsonParser
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
@@ -20,7 +20,7 @@ import javax.inject.Singleton
 @Singleton
 class LawRepositoryImpl @Inject constructor(
     private val apiClient: EGovLawApiClient,
-    private val xmlParser: LawXmlParser,
+    private val jsonParser: LawJsonParser,
     private val articleDao: ArticleDao,
     private val lawMetadataDao: LawMetadataDao,
 ) : LawRepository {
@@ -71,8 +71,8 @@ class LawRepositoryImpl @Inject constructor(
 
     suspend fun refreshLawCode(lawCode: LawCode): Boolean {
         return try {
-            val xml = apiClient.getLawData(lawCode.lawId)
-            val result = xmlParser.parseLaw(xml, lawCode)
+            val jsonString = apiClient.getLawData(lawCode.lawId)
+            val result = jsonParser.parse(jsonString, lawCode)
             if (result.articles.isNotEmpty()) {
                 articleDao.deleteByLawCode(lawCode.name)
                 articleDao.insertAll(result.articles.map { it.toEntity() })
@@ -107,8 +107,8 @@ class LawRepositoryImpl @Inject constructor(
 
     private suspend fun fetchAndCache(lawCode: LawCode): List<Article> {
         return try {
-            val xml = apiClient.getLawData(lawCode.lawId)
-            val result = xmlParser.parseLaw(xml, lawCode)
+            val jsonString = apiClient.getLawData(lawCode.lawId)
+            val result = jsonParser.parse(jsonString, lawCode)
             if (result.articles.isNotEmpty()) {
                 articleDao.deleteByLawCode(lawCode.name)
                 articleDao.insertAll(result.articles.map { it.toEntity() })
