@@ -8,14 +8,23 @@ import java.io.StringReader
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class LawParseResult(
+    val lawNum: String?,
+    val articles: List<Article>,
+)
+
 @Singleton
 class LawXmlParser @Inject constructor() {
 
-    fun parseArticles(xml: String, lawCode: LawCode): List<Article> {
+    fun parseLaw(xml: String, lawCode: LawCode): LawParseResult {
         val articles = mutableListOf<Article>()
         val factory = XmlPullParserFactory.newInstance()
         val parser = factory.newPullParser()
         parser.setInput(StringReader(xml))
+
+        var lawNum: String? = null
+        var insideLawNum = false
+        var lawNumText = StringBuilder()
 
         var currentArticleNumber: String? = null
         var currentArticleTitle: String? = null
@@ -31,13 +40,18 @@ class LawXmlParser @Inject constructor() {
         var insideItemTitle = false
         var currentItemTitle = ""
         var currentItemText = StringBuilder()
-        var depth = 0
 
         var eventType = parser.eventType
         while (eventType != XmlPullParser.END_DOCUMENT) {
             when (eventType) {
                 XmlPullParser.START_TAG -> {
                     when (parser.name) {
+                        "LawNum" -> {
+                            if (lawNum == null) {
+                                insideLawNum = true
+                                lawNumText = StringBuilder()
+                            }
+                        }
                         "Article" -> {
                             insideArticle = true
                             currentArticleNumber = parser.getAttributeValue(null, "Num") ?: ""
@@ -94,6 +108,7 @@ class LawXmlParser @Inject constructor() {
                     val text = parser.text?.trim() ?: ""
                     if (text.isNotEmpty()) {
                         when {
+                            insideLawNum -> lawNumText.append(text)
                             insideArticleTitle -> currentText.append(text)
                             insideArticleCaption -> currentText.append(text)
                             insideParagraphSentence -> currentText.append(text)
@@ -104,6 +119,12 @@ class LawXmlParser @Inject constructor() {
                 }
                 XmlPullParser.END_TAG -> {
                     when (parser.name) {
+                        "LawNum" -> {
+                            if (insideLawNum) {
+                                lawNum = lawNumText.toString().ifEmpty { null }
+                                insideLawNum = false
+                            }
+                        }
                         "Article" -> {
                             if (insideArticle && currentArticleTitle != null && currentParagraphs.isNotEmpty()) {
                                 // 「削除」のみの条文を除外
@@ -176,6 +197,9 @@ class LawXmlParser @Inject constructor() {
             eventType = parser.next()
         }
 
-        return articles
+        return LawParseResult(
+            lawNum = lawNum,
+            articles = articles,
+        )
     }
 }

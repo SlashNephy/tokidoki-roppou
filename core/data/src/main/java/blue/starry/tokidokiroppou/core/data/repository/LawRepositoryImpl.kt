@@ -2,12 +2,16 @@ package blue.starry.tokidokiroppou.core.data.repository
 
 import blue.starry.tokidokiroppou.core.data.api.EGovLawApiClient
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
+import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
+import blue.starry.tokidokiroppou.core.data.db.LawMetadataEntity
 import blue.starry.tokidokiroppou.core.data.db.toDomain
 import blue.starry.tokidokiroppou.core.data.db.toEntity
 import blue.starry.tokidokiroppou.core.data.parser.LawXmlParser
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,6 +21,7 @@ class LawRepositoryImpl @Inject constructor(
     private val apiClient: EGovLawApiClient,
     private val xmlParser: LawXmlParser,
     private val articleDao: ArticleDao,
+    private val lawMetadataDao: LawMetadataDao,
 ) : LawRepository {
 
     override suspend fun getArticles(lawCode: LawCode): List<Article> {
@@ -42,14 +47,27 @@ class LawRepositoryImpl @Inject constructor(
         return articles.randomOrNull()
     }
 
+    override fun observeLawNums(): Flow<Map<LawCode, String>> {
+        return lawMetadataDao.observeAll().map { entities ->
+            entities.mapNotNull { entity ->
+                val lawCode = runCatching { LawCode.valueOf(entity.lawCode) }.getOrNull()
+                    ?: return@mapNotNull null
+                lawCode to entity.lawNum
+            }.toMap()
+        }
+    }
+
     suspend fun refreshLawCode(lawCode: LawCode): Boolean {
         return try {
             val xml = apiClient.getLawData(lawCode.lawId)
-            val articles = xmlParser.parseArticles(xml, lawCode)
-            if (articles.isNotEmpty()) {
+            val result = xmlParser.parseLaw(xml, lawCode)
+            if (result.articles.isNotEmpty()) {
                 articleDao.deleteByLawCode(lawCode.name)
-                articleDao.insertAll(articles.map { it.toEntity() })
-                Timber.d("Cached %d articles from %s", articles.size, lawCode.displayName)
+                articleDao.insertAll(result.articles.map { it.toEntity() })
+                Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
+            }
+            if (result.lawNum != null) {
+                lawMetadataDao.upsert(LawMetadataEntity(lawCode.name, result.lawNum))
             }
             true
         } catch (e: Exception) {
@@ -65,13 +83,16 @@ class LawRepositoryImpl @Inject constructor(
     private suspend fun fetchAndCache(lawCode: LawCode): List<Article> {
         return try {
             val xml = apiClient.getLawData(lawCode.lawId)
-            val articles = xmlParser.parseArticles(xml, lawCode)
-            if (articles.isNotEmpty()) {
+            val result = xmlParser.parseLaw(xml, lawCode)
+            if (result.articles.isNotEmpty()) {
                 articleDao.deleteByLawCode(lawCode.name)
-                articleDao.insertAll(articles.map { it.toEntity() })
-                Timber.d("Cached %d articles from %s", articles.size, lawCode.displayName)
+                articleDao.insertAll(result.articles.map { it.toEntity() })
+                Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
             }
-            articles
+            if (result.lawNum != null) {
+                lawMetadataDao.upsert(LawMetadataEntity(lawCode.name, result.lawNum))
+            }
+            result.articles
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch articles for %s", lawCode.displayName)
             emptyList()

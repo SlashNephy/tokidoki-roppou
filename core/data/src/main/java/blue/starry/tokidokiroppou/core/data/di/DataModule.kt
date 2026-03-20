@@ -9,6 +9,7 @@ import androidx.room.Room
 import androidx.work.WorkManager
 import blue.starry.tokidokiroppou.core.data.db.AppDatabase
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
+import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
 import blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
@@ -53,6 +54,12 @@ object DataProvidesModule {
     @Singleton
     fun provideArticleDao(database: AppDatabase): ArticleDao {
         return database.articleDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLawMetadataDao(database: AppDatabase): LawMetadataDao {
+        return database.lawMetadataDao()
     }
 
     @Provides
