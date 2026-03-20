@@ -28,13 +28,39 @@ fun extractArticleReferences(article: Article): List<String> {
         }
     }
 
-    // 前条・次条
+    // 前条・次条・前X条・次X条
     val currentNum = article.articleNumber.split("_")[0].toIntOrNull()
     if (currentNum != null) {
-        if ("前条" in text) {
+        // 前X条 (例: 「前2条」→ 現在の条文-1, 現在の条文-2)
+        val prevNPattern = Regex("前([一二三四五六七八九十百千万\\d]+)条")
+        for (match in prevNPattern.findAll(text)) {
+            val n = match.groupValues[1].toIntOrNull()
+                ?: kanjiToArabicNumber(match.groupValues[1])
+            if (n > 0) {
+                for (i in 1..n) {
+                    val target = currentNum - i
+                    if (target > 0) refs.add(target.toString())
+                }
+            }
+        }
+
+        // 次X条 (例: 「次2条」→ 現在の条文+1, 現在の条文+2)
+        val nextNPattern = Regex("次([一二三四五六七八九十百千万\\d]+)条")
+        for (match in nextNPattern.findAll(text)) {
+            val n = match.groupValues[1].toIntOrNull()
+                ?: kanjiToArabicNumber(match.groupValues[1])
+            if (n > 0) {
+                for (i in 1..n) {
+                    refs.add((currentNum + i).toString())
+                }
+            }
+        }
+
+        // 前条・次条 (数字なし、前X条パターンにマッチしないもの)
+        if (Regex("前(?![一二三四五六七八九十百千万\\d])条").containsMatchIn(text)) {
             refs.add((currentNum - 1).toString())
         }
-        if ("次条" in text) {
+        if (Regex("次(?![一二三四五六七八九十百千万\\d])条").containsMatchIn(text)) {
             refs.add((currentNum + 1).toString())
         }
     }
