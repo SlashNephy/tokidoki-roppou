@@ -147,17 +147,16 @@ private fun SettingsContent(
                         val isEnabled = lawCode in settings.enabledLawCodes
                         val metadata = lawMetadata[lawCode]
                         val subtitle = metadata?.let {
+                            val num = it.lastAmendmentLawNum ?: it.lawNum
                             val amendment = it.lastAmendmentDate
                             val promulgation = it.promulgationDate
-                            val parts = buildList {
-                                add(it.lawNum)
-                                if (amendment != null) {
-                                    add("${formatIsoDate(amendment)}改正")
-                                } else if (promulgation != null) {
-                                    add("${promulgation}公布")
-                                }
+                            val text = if (amendment != null) {
+                                "${num}・${formatIsoDate(amendment)}改正"
+                            } else if (promulgation != null) {
+                                "${num}・${promulgation}公布"
+                            } else {
+                                num
                             }
-                            val text = parts.joinToString("・")
                             if (settings.useHalfWidthParentheses) text.normalizeDisplay() else text
                         }
                         SettingItem(
@@ -183,7 +182,6 @@ private fun SettingsContent(
     }
 }
 
-// "2023-06-14" → "2023年6月14日"
 private fun formatIsoDate(isoDate: String): String {
     val parts = isoDate.split("-")
     if (parts.size != 3) return isoDate
