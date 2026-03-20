@@ -2,6 +2,16 @@
 
 一定間隔で日本の法令の条文を通知してくれる Android アプリです。日常の中で自然と法律に触れる機会を作ります。
 
+## スクリーンショット
+
+<!-- markdownlint-disable MD033 MD045 -->
+<p align="center">
+  <img src="image/screenshot_home.png" alt="ホーム画面" width="30%" />
+  <img src="image/screenshot_settings.png" alt="設定画面" width="30%" />
+  <img src="image/screenshot_notifications.png" alt="通知" width="30%" />
+</p>
+<!-- markdownlint-enable MD033 MD045 -->
+
 ## テスト版の配布
 
 Firebase App Distribution でテスト版を配布しています。以下のリンクからテスターとして参加できます。
@@ -14,7 +24,7 @@ Firebase App Distribution でテスト版を配布しています。以下のリ
 - 通知タップでアプリ内に条文を表示
 - 表示中の条文から参照されている関連条文も併せて表示
 - 全角かっこの半角化・漢数字の算用数字変換オプション
-- 法令データは [e-Gov 法令 API](https://laws.e-gov.go.jp/api/1/) からローカルに取得・キャッシュ
+- 法令データは [e-Gov 法令 API](https://laws.e-gov.go.jp/api/2/) からローカルに取得・キャッシュ
 
 ## 対応法令
 
