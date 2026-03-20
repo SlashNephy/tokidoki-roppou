@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 import blue.starry.tokidokiroppou.core.ui.component.SettingItem
 import blue.starry.tokidokiroppou.core.ui.component.SettingSection
@@ -37,7 +38,7 @@ fun SettingsScreen(
     viewModel: SettingsScreenViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
-    val lawNums by viewModel.lawNums.collectAsStateWithLifecycle()
+    val lawMetadata by viewModel.lawMetadata.collectAsStateWithLifecycle()
 
     Scaffold { innerPadding ->
         val currentSettings = settings
@@ -53,7 +54,7 @@ fun SettingsScreen(
         } else {
             SettingsContent(
                 settings = currentSettings,
-                lawNums = lawNums,
+                lawMetadata = lawMetadata,
                 onNotificationEnabledChanged = viewModel::setNotificationEnabled,
                 onIntervalChanged = viewModel::setNotificationInterval,
                 onLawCodeEnabledChanged = viewModel::setLawCodeEnabled,
@@ -67,7 +68,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsContent(
     settings: ApplicationSettings,
-    lawNums: Map<LawCode, String>,
+    lawMetadata: Map<LawCode, LawMetadata>,
     onNotificationEnabledChanged: (Boolean) -> Unit,
     onIntervalChanged: (Int) -> Unit,
     onLawCodeEnabledChanged: (LawCode, Boolean) -> Unit,
@@ -144,11 +145,20 @@ private fun SettingsContent(
                 SettingSection(title = category.displayName) {
                     lawCodes.forEach { lawCode ->
                         val isEnabled = lawCode in settings.enabledLawCodes
+                        val metadata = lawMetadata[lawCode]
+                        val subtitle = metadata?.let {
+                            val parts = buildList {
+                                add(it.lawNum)
+                                if (it.promulgationDate != null) {
+                                    add("${it.promulgationDate}公布")
+                                }
+                            }
+                            val text = parts.joinToString("・")
+                            if (settings.useHalfWidthParentheses) text.normalizeDisplay() else text
+                        }
                         SettingItem(
                             headline = lawCode.displayName,
-                            supporting = lawNums[lawCode]?.let {
-                                if (settings.useHalfWidthParentheses) it.normalizeDisplay() else it
-                            },
+                            supporting = subtitle,
                             leadingIcon = Icons.Default.Book,
                             trailing = {
                                 Checkbox(

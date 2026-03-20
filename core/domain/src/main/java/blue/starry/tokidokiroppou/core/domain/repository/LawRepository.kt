@@ -2,6 +2,7 @@ package blue.starry.tokidokiroppou.core.domain.repository
 
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import kotlinx.coroutines.flow.Flow
 
 interface LawRepository {
@@ -9,5 +10,5 @@ interface LawRepository {
 
     suspend fun getRandomArticle(lawCodes: Set<LawCode>): Article?
 
-    fun observeLawNums(): Flow<Map<LawCode, String>>
+    fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>>
 }

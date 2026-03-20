@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import blue.starry.tokidokiroppou.core.data.worker.ArticleNotificationScheduler
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,7 +29,7 @@ class SettingsScreenViewModel @Inject constructor(
             initialValue = null,
         )
 
-    val lawNums: StateFlow<Map<LawCode, String>> = lawRepository.observeLawNums()
+    val lawMetadata: StateFlow<Map<LawCode, LawMetadata>> = lawRepository.observeLawMetadata()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),

@@ -8,4 +8,5 @@ data class LawMetadataEntity(
     @PrimaryKey
     val lawCode: String,
     val lawNum: String,
+    val promulgationDate: String?,
 )
