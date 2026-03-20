@@ -9,5 +9,6 @@ data class LawMetadataEntity(
     val lawCode: String,
     val lawNum: String,
     val promulgationDate: String?,
+    val lastAmendmentDate: String?,
     val lastRefreshedAt: Long = System.currentTimeMillis(),
 )
