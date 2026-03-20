@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,16 +41,16 @@ class EGovLawApiClient @Inject constructor(
             val root = json.parseToJsonElement(body).jsonObject
 
             val lawInfo = root["law_info"]?.jsonObject
-            val lawNum = lawInfo?.get("law_num")?.jsonPrimitive?.content ?: return null
-            val promulgationDate = lawInfo["promulgation_date"]?.jsonPrimitive?.content
+            val lawNum = lawInfo?.get("law_num")?.jsonPrimitive?.contentOrNull ?: return null
+            val promulgationDate = lawInfo["promulgation_date"]?.jsonPrimitive?.contentOrNull
 
             val revisions = root["revisions"]?.jsonArray
             val currentEnforced = revisions
                 ?.map { it.jsonObject }
-                ?.firstOrNull { it["current_revision_status"]?.jsonPrimitive?.content == "CurrentEnforced" }
+                ?.firstOrNull { it["current_revision_status"]?.jsonPrimitive?.contentOrNull == "CurrentEnforced" }
 
-            val amendmentLawNum = currentEnforced?.get("amendment_law_num")?.jsonPrimitive?.content
-            val amendmentDate = currentEnforced?.get("amendment_promulgate_date")?.jsonPrimitive?.content
+            val amendmentLawNum = currentEnforced?.get("amendment_law_num")?.jsonPrimitive?.contentOrNull
+            val amendmentDate = currentEnforced?.get("amendment_promulgate_date")?.jsonPrimitive?.contentOrNull
 
             LawRevisionInfo(
                 lawNum = amendmentLawNum ?: lawNum,
