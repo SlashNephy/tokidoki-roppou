@@ -2,6 +2,7 @@ plugins {
     id("tokidokiroppou.android.library")
     id("tokidokiroppou.compose")
     id("tokidokiroppou.hilt")
+    id("tokidokiroppou.kotlin.serialization")
 }
 
 android {
@@ -20,6 +21,8 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.hilt.navigation.compose)
     debugImplementation(libs.compose.ui.tooling)
 }

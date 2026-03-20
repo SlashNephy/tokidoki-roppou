@@ -4,7 +4,9 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -51,6 +53,8 @@ class ArticleNotificationSender @Inject constructor(
         val fullText = article.fullText(useHalfWidthParentheses)
         val displayText = if (fullText.length > 300) fullText.take(300) + "…" else fullText
 
+        val contentIntent = createContentIntent(article)
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -61,6 +65,7 @@ class ArticleNotificationSender @Inject constructor(
                     .setBigContentTitle(title)
                     .setSummaryText(article.lawCode.displayName)
             )
+            .setContentIntent(contentIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()
@@ -73,7 +78,28 @@ class ArticleNotificationSender @Inject constructor(
         Timber.d("Sent notification: %s", article.displayTitle)
     }
 
+    private fun createContentIntent(article: Article): PendingIntent {
+        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?: Intent().apply {
+                setClassName(context, "blue.starry.tokidokiroppou.MainActivity")
+            }
+        launchIntent.apply {
+            putExtra(EXTRA_LAW_CODE, article.lawCode.name)
+            putExtra(EXTRA_ARTICLE_NUMBER, article.articleNumber)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        return PendingIntent.getActivity(
+            context,
+            article.hashCode(),
+            launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
     companion object {
         const val CHANNEL_ID = "article_notification"
+        const val EXTRA_LAW_CODE = "extra_law_code"
+        const val EXTRA_ARTICLE_NUMBER = "extra_article_number"
     }
 }
