@@ -147,10 +147,14 @@ private fun SettingsContent(
                         val isEnabled = lawCode in settings.enabledLawCodes
                         val metadata = lawMetadata[lawCode]
                         val subtitle = metadata?.let {
+                            val amendment = it.lastAmendmentDate
+                            val promulgation = it.promulgationDate
                             val parts = buildList {
                                 add(it.lawNum)
-                                if (it.promulgationDate != null) {
-                                    add("${it.promulgationDate}公布")
+                                if (amendment != null) {
+                                    add("${formatIsoDate(amendment)}改正")
+                                } else if (promulgation != null) {
+                                    add("${promulgation}公布")
                                 }
                             }
                             val text = parts.joinToString("・")
@@ -177,4 +181,14 @@ private fun SettingsContent(
             }
         }
     }
+}
+
+// "2023-06-14" → "2023年6月14日"
+private fun formatIsoDate(isoDate: String): String {
+    val parts = isoDate.split("-")
+    if (parts.size != 3) return isoDate
+    val year = parts[0].toIntOrNull() ?: return isoDate
+    val month = parts[1].toIntOrNull() ?: return isoDate
+    val day = parts[2].toIntOrNull() ?: return isoDate
+    return "${year}年${month}月${day}日"
 }

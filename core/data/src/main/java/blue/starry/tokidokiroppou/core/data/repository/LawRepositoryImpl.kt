@@ -56,6 +56,7 @@ class LawRepositoryImpl @Inject constructor(
                 lawCode to LawMetadata(
                     lawNum = entity.lawNum,
                     promulgationDate = entity.promulgationDate,
+                    lastAmendmentDate = entity.lastAmendmentDate,
                 )
             }.toMap()
         }
@@ -76,9 +77,15 @@ class LawRepositoryImpl @Inject constructor(
                 articleDao.insertAll(result.articles.map { it.toEntity() })
                 Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
             }
+            val lastAmendmentDate = apiClient.getLastAmendmentDate(lawCode.lawId)
             if (result.lawNum != null) {
                 lawMetadataDao.upsert(
-                    LawMetadataEntity(lawCode.name, result.lawNum, result.promulgationDate)
+                    LawMetadataEntity(
+                        lawCode = lawCode.name,
+                        lawNum = result.lawNum,
+                        promulgationDate = result.promulgationDate,
+                        lastAmendmentDate = lastAmendmentDate,
+                    )
                 )
             }
             true
@@ -105,9 +112,15 @@ class LawRepositoryImpl @Inject constructor(
                 articleDao.insertAll(result.articles.map { it.toEntity() })
                 Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
             }
+            val lastAmendmentDate = apiClient.getLastAmendmentDate(lawCode.lawId)
             if (result.lawNum != null) {
                 lawMetadataDao.upsert(
-                    LawMetadataEntity(lawCode.name, result.lawNum, result.promulgationDate)
+                    LawMetadataEntity(
+                        lawCode = lawCode.name,
+                        lawNum = result.lawNum,
+                        promulgationDate = result.promulgationDate,
+                        lastAmendmentDate = lastAmendmentDate,
+                    )
                 )
             }
             result.articles
