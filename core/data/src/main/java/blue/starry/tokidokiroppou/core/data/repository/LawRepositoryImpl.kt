@@ -78,15 +78,15 @@ class LawRepositoryImpl @Inject constructor(
                 articleDao.insertAll(result.articles.map { it.toEntity() })
                 Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
             }
-            val amendmentInfo = apiClient.getLastAmendmentInfo(lawCode.lawId)
-            if (result.lawNum != null) {
+            val revisionInfo = apiClient.getLawRevisionInfo(lawCode.lawId)
+            if (revisionInfo != null) {
                 lawMetadataDao.upsert(
                     LawMetadataEntity(
                         lawCode = lawCode.name,
-                        lawNum = result.lawNum,
-                        promulgationDate = result.promulgationDate,
-                        lastAmendmentDate = amendmentInfo?.promulgateDate,
-                        lastAmendmentLawNum = amendmentInfo?.lawNum,
+                        lawNum = revisionInfo.lawNum,
+                        promulgationDate = revisionInfo.promulgationDate,
+                        lastAmendmentDate = revisionInfo.amendmentDate,
+                        lastAmendmentLawNum = revisionInfo.amendmentLawNum,
                     )
                 )
             }
@@ -114,15 +114,15 @@ class LawRepositoryImpl @Inject constructor(
                 articleDao.insertAll(result.articles.map { it.toEntity() })
                 Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
             }
-            val amendmentInfo = apiClient.getLastAmendmentInfo(lawCode.lawId)
-            if (result.lawNum != null) {
+            val revisionInfo = apiClient.getLawRevisionInfo(lawCode.lawId)
+            if (revisionInfo != null) {
                 lawMetadataDao.upsert(
                     LawMetadataEntity(
                         lawCode = lawCode.name,
-                        lawNum = result.lawNum,
-                        promulgationDate = result.promulgationDate,
-                        lastAmendmentDate = amendmentInfo?.promulgateDate,
-                        lastAmendmentLawNum = amendmentInfo?.lawNum,
+                        lawNum = revisionInfo.lawNum,
+                        promulgationDate = revisionInfo.promulgationDate,
+                        lastAmendmentDate = revisionInfo.amendmentDate,
+                        lastAmendmentLawNum = revisionInfo.amendmentLawNum,
                     )
                 )
             }

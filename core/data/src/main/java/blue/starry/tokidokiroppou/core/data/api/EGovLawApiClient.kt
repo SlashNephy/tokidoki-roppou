@@ -11,9 +11,11 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class AmendmentInfo(
+data class LawRevisionInfo(
     val lawNum: String,
-    val promulgateDate: String,
+    val promulgationDate: String,
+    val amendmentLawNum: String?,
+    val amendmentDate: String?,
 )
 
 @Singleton
@@ -29,26 +31,32 @@ class EGovLawApiClient @Inject constructor(
         return response.bodyAsText()
     }
 
-    suspend fun getLastAmendmentInfo(lawId: String): AmendmentInfo? {
+    suspend fun getLawRevisionInfo(lawId: String): LawRevisionInfo? {
         return try {
             val url = "$BASE_URL_V2/law_revisions/$lawId"
             Timber.d("Fetching law revisions: %s", url)
             val response = httpClient.get(url)
             val body = response.bodyAsText()
             val root = json.parseToJsonElement(body).jsonObject
-            val revisions = root["revisions"]?.jsonArray ?: return null
 
+            val lawInfo = root["law_info"]?.jsonObject
+            val lawNum = lawInfo?.get("law_num")?.jsonPrimitive?.content ?: return null
+            val promulgationDate = lawInfo["promulgation_date"]?.jsonPrimitive?.content
+
+            val revisions = root["revisions"]?.jsonArray
             val currentEnforced = revisions
-                .map { it.jsonObject }
-                .firstOrNull { it["current_revision_status"]?.jsonPrimitive?.content == "CurrentEnforced" }
-                ?: return null
+                ?.map { it.jsonObject }
+                ?.firstOrNull { it["current_revision_status"]?.jsonPrimitive?.content == "CurrentEnforced" }
 
-            val lawNum = currentEnforced["amendment_law_num"]?.jsonPrimitive?.content
-                ?: return null
-            val date = currentEnforced["amendment_promulgate_date"]?.jsonPrimitive?.content
-                ?: return null
+            val amendmentLawNum = currentEnforced?.get("amendment_law_num")?.jsonPrimitive?.content
+            val amendmentDate = currentEnforced?.get("amendment_promulgate_date")?.jsonPrimitive?.content
 
-            AmendmentInfo(lawNum = lawNum, promulgateDate = date)
+            LawRevisionInfo(
+                lawNum = amendmentLawNum ?: lawNum,
+                promulgationDate = promulgationDate ?: "",
+                amendmentLawNum = amendmentLawNum,
+                amendmentDate = if (amendmentLawNum != null) amendmentDate else null,
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch law revisions for %s", lawId)
             null
