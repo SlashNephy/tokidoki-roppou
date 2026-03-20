@@ -116,8 +116,8 @@ private fun SettingsContent(
         item {
             SettingSection(title = "表示") {
                 SettingItem(
-                    headline = "全角かっこを半角にする",
-                    supporting = "（）を () に変換して表示します",
+                    headline = "読みやすい表記にする",
+                    supporting = "全角かっこを半角に、法令番号の漢数字を算用数字に変換します",
                     leadingIcon = Icons.Default.TextFormat,
                     trailing = {
                         Switch(
