@@ -20,6 +20,10 @@ android {
         buildConfig = true
     }
 
+    lint {
+        sarifReport = true
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
