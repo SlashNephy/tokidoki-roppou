@@ -4,8 +4,31 @@ fun String.normalizeDisplay(): String {
     return normalizeParentheses().convertLegalKanjiNumbers()
 }
 
+// 文中の全角かっこを半角に変換し、前後にスペースを挿入する。
+// ただし文頭の「（」や文末の「）」、既にスペースがある場合はスペースを追加しない。
 private fun String.normalizeParentheses(): String {
-    return replace('（', '(').replace('）', ')')
+    val sb = StringBuilder(length)
+    for (i in indices) {
+        when (this[i]) {
+            '（' -> {
+                // 前の文字が存在し、スペースでなければスペースを挿入
+                if (i > 0 && sb.isNotEmpty() && sb.last() != ' ' && sb.last() != '\n') {
+                    sb.append(' ')
+                }
+                sb.append('(')
+            }
+            '）' -> {
+                sb.append(')')
+                // 後の文字が存在し、スペースや改行でなければスペースを挿入
+                val next = getOrNull(i + 1)
+                if (next != null && next != ' ' && next != '\n' && next != '。' && next != '、' && next != '）') {
+                    sb.append(' ')
+                }
+            }
+            else -> sb.append(this[i])
+        }
+    }
+    return sb.toString()
 }
 
 // 第X条, 第X項, 第X号 など法令番号パターンの漢数字のみを算用数字に変換する。
