@@ -9,8 +9,10 @@ import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -87,6 +89,21 @@ class SettingsScreenViewModel @Inject constructor(
     fun setUseHalfWidthParentheses(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setUseHalfWidthParentheses(enabled)
+        }
+    }
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    fun clearCacheAndRefresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            lawRepository.clearCache()
+            val enabledCodes = settingsRepository.get().enabledLawCodes
+            for (lawCode in enabledCodes) {
+                lawRepository.refreshLawCode(lawCode)
+            }
+            _isRefreshing.value = false
         }
     }
 }

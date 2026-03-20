@@ -17,6 +17,9 @@ interface LawMetadataDao {
     @Query("SELECT lawCode FROM law_metadata WHERE lastRefreshedAt > :threshold")
     suspend fun getRecentlyRefreshedCodes(threshold: Long): List<String>
 
+    @Query("DELETE FROM law_metadata")
+    suspend fun deleteAll()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: LawMetadataEntity)
 }
