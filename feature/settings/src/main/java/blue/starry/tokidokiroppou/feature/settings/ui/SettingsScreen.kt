@@ -1,16 +1,19 @@
 package blue.starry.tokidokiroppou.feature.settings.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
@@ -102,28 +105,47 @@ private fun SettingsContent(
                     },
                 )
 
-                var showIntervalMenu by remember { mutableStateOf(false) }
-                Box {
-                    SettingItem(
-                        headline = "通知間隔",
-                        supporting = ApplicationSettings.intervalDisplayText(settings.notificationIntervalMinutes),
-                        leadingIcon = Icons.Default.Schedule,
-                        onClick = { showIntervalMenu = true },
+                var showIntervalDialog by remember { mutableStateOf(false) }
+                SettingItem(
+                    headline = "通知間隔",
+                    supporting = ApplicationSettings.intervalDisplayText(settings.notificationIntervalMinutes),
+                    leadingIcon = Icons.Default.Schedule,
+                    onClick = { showIntervalDialog = true },
+                )
+                if (showIntervalDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showIntervalDialog = false },
+                        title = { Text("通知間隔") },
+                        text = {
+                            Column {
+                                ApplicationSettings.INTERVAL_OPTIONS.forEach { minutes ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                onIntervalChanged(minutes)
+                                                showIntervalDialog = false
+                                            }
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        RadioButton(
+                                            selected = minutes == settings.notificationIntervalMinutes,
+                                            onClick = {
+                                                onIntervalChanged(minutes)
+                                                showIntervalDialog = false
+                                            },
+                                        )
+                                        Text(
+                                            text = ApplicationSettings.intervalDisplayText(minutes),
+                                            modifier = Modifier.padding(start = 8.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {},
                     )
-                    DropdownMenu(
-                        expanded = showIntervalMenu,
-                        onDismissRequest = { showIntervalMenu = false },
-                    ) {
-                        ApplicationSettings.INTERVAL_OPTIONS.forEach { minutes ->
-                            DropdownMenuItem(
-                                text = { Text(ApplicationSettings.intervalDisplayText(minutes)) },
-                                onClick = {
-                                    onIntervalChanged(minutes)
-                                    showIntervalMenu = false
-                                },
-                            )
-                        }
-                    }
                 }
             }
         }
