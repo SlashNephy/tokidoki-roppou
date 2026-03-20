@@ -60,6 +60,17 @@ class LawRepositoryImpl @Inject constructor(
             .mapNotNull { it.toDomain() }
     }
 
+    override suspend fun getLawMetadata(lawCode: LawCode): LawMetadata? {
+        val entity = lawMetadataDao.getByLawCode(lawCode.name) ?: return null
+        return LawMetadata(
+            lawNum = entity.lawNum,
+            promulgationDate = entity.promulgationDate,
+            lastAmendmentDate = entity.lastAmendmentDate,
+            lastAmendmentLawNum = entity.lastAmendmentLawNum,
+            lastRefreshedAt = entity.lastRefreshedAt,
+        )
+    }
+
     override fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>> {
         return lawMetadataDao.observeAll().map { entities ->
             entities.mapNotNull { entity ->
@@ -70,6 +81,7 @@ class LawRepositoryImpl @Inject constructor(
                     promulgationDate = entity.promulgationDate,
                     lastAmendmentDate = entity.lastAmendmentDate,
                     lastAmendmentLawNum = entity.lastAmendmentLawNum,
+                    lastRefreshedAt = entity.lastRefreshedAt,
                 )
             }.toMap()
         }

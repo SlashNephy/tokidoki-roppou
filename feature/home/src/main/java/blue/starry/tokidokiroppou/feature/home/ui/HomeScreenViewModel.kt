@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,7 +44,8 @@ class HomeScreenViewModel @Inject constructor(
 
             if (article != null) {
                 val related = lawRepository.getRelatedArticles(article)
-                _uiState.value = HomeUiState.Loaded(article, related, settings.useHalfWidthParentheses)
+                val metadata = lawRepository.getLawMetadata(article.lawCode)
+                _uiState.value = HomeUiState.Loaded(article, related, metadata, settings.useHalfWidthParentheses)
             } else {
                 _uiState.value = HomeUiState.Error("条文を取得できませんでした")
             }
@@ -60,7 +62,8 @@ class HomeScreenViewModel @Inject constructor(
 
             if (article != null) {
                 val related = lawRepository.getRelatedArticles(article)
-                _uiState.value = HomeUiState.Loaded(article, related, settings.useHalfWidthParentheses)
+                val metadata = lawRepository.getLawMetadata(article.lawCode)
+                _uiState.value = HomeUiState.Loaded(article, related, metadata, settings.useHalfWidthParentheses)
             } else {
                 _uiState.value = HomeUiState.Error("条文を取得できませんでした")
             }
@@ -73,6 +76,7 @@ sealed interface HomeUiState {
     data class Loaded(
         val article: Article,
         val relatedArticles: List<Article>,
+        val lawMetadata: LawMetadata?,
         val useHalfWidthParentheses: Boolean,
     ) : HomeUiState
     data class Error(val message: String) : HomeUiState
