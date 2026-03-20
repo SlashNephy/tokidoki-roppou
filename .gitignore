@@ -35,3 +35,7 @@ google-services.json
 
 .kotlin/
 app/release/
+
+# CI/CD secrets
+keystore.properties
+firebase-service-account.json
