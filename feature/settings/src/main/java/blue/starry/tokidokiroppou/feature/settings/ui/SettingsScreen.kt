@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 import blue.starry.tokidokiroppou.core.ui.component.SettingItem
 import blue.starry.tokidokiroppou.core.ui.component.SettingSection
 
@@ -36,6 +37,7 @@ fun SettingsScreen(
     viewModel: SettingsScreenViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val lawNums by viewModel.lawNums.collectAsStateWithLifecycle()
 
     Scaffold { innerPadding ->
         val currentSettings = settings
@@ -51,6 +53,7 @@ fun SettingsScreen(
         } else {
             SettingsContent(
                 settings = currentSettings,
+                lawNums = lawNums,
                 onNotificationEnabledChanged = viewModel::setNotificationEnabled,
                 onIntervalChanged = viewModel::setNotificationInterval,
                 onLawCodeEnabledChanged = viewModel::setLawCodeEnabled,
@@ -64,6 +67,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsContent(
     settings: ApplicationSettings,
+    lawNums: Map<LawCode, String>,
     onNotificationEnabledChanged: (Boolean) -> Unit,
     onIntervalChanged: (Int) -> Unit,
     onLawCodeEnabledChanged: (LawCode, Boolean) -> Unit,
@@ -142,6 +146,9 @@ private fun SettingsContent(
                         val isEnabled = lawCode in settings.enabledLawCodes
                         SettingItem(
                             headline = lawCode.displayName,
+                            supporting = lawNums[lawCode]?.let {
+                                if (settings.useHalfWidthParentheses) it.normalizeDisplay() else it
+                            },
                             leadingIcon = Icons.Default.Book,
                             trailing = {
                                 Checkbox(
