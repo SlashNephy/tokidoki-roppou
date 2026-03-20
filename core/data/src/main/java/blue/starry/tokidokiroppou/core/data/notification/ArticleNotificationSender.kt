@@ -35,7 +35,7 @@ class ArticleNotificationSender @Inject constructor(
     }
 
     @SuppressLint("MissingPermission")
-    fun sendArticleNotification(article: Article) {
+    fun sendArticleNotification(article: Article, useHalfWidthParentheses: Boolean = false) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     context,
@@ -47,18 +47,18 @@ class ArticleNotificationSender @Inject constructor(
             }
         }
 
-        val displayText = article.fullText.let {
-            if (it.length > 300) it.take(300) + "…" else it
-        }
+        val title = article.displayTitle(useHalfWidthParentheses)
+        val fullText = article.fullText(useHalfWidthParentheses)
+        val displayText = if (fullText.length > 300) fullText.take(300) + "…" else fullText
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(article.displayTitle)
+            .setContentTitle(title)
             .setContentText(displayText)
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText(article.fullText)
-                    .setBigContentTitle(article.displayTitle)
+                    .bigText(fullText)
+                    .setBigContentTitle(title)
                     .setSummaryText(article.lawCode.displayName)
             )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

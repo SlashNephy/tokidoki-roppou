@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,6 +53,7 @@ fun SettingsScreen(
                 onNotificationEnabledChanged = viewModel::setNotificationEnabled,
                 onIntervalChanged = viewModel::setNotificationInterval,
                 onLawCodeEnabledChanged = viewModel::setLawCodeEnabled,
+                onUseHalfWidthParenthesesChanged = viewModel::setUseHalfWidthParentheses,
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -64,6 +66,7 @@ private fun SettingsContent(
     onNotificationEnabledChanged: (Boolean) -> Unit,
     onIntervalChanged: (Int) -> Unit,
     onLawCodeEnabledChanged: (LawCode, Boolean) -> Unit,
+    onUseHalfWidthParenthesesChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier) {
@@ -107,6 +110,25 @@ private fun SettingsContent(
                         }
                     }
                 }
+            }
+        }
+
+        item {
+            SettingSection(title = "表示") {
+                SettingItem(
+                    headline = "全角かっこを半角にする",
+                    supporting = "（）を () に変換して表示します",
+                    leadingIcon = Icons.Default.TextFormat,
+                    trailing = {
+                        Switch(
+                            checked = settings.useHalfWidthParentheses,
+                            onCheckedChange = onUseHalfWidthParenthesesChanged,
+                        )
+                    },
+                    onClick = {
+                        onUseHalfWidthParenthesesChanged(!settings.useHalfWidthParentheses)
+                    },
+                )
             }
         }
 

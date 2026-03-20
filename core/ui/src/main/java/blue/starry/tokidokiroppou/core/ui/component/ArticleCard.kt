@@ -18,6 +18,7 @@ import blue.starry.tokidokiroppou.core.domain.model.Article
 @Composable
 fun ArticleCard(
     article: Article,
+    useHalfWidthParentheses: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -36,13 +37,13 @@ fun ArticleCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = article.articleTitle,
+                text = article.displayTitle(useHalfWidthParentheses),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = article.fullText,
+                text = article.fullText(useHalfWidthParentheses),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

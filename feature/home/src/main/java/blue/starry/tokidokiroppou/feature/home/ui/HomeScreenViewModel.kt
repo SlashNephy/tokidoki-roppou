@@ -33,7 +33,7 @@ class HomeScreenViewModel @Inject constructor(
             val article = lawRepository.getRandomArticle(settings.enabledLawCodes)
 
             _uiState.value = if (article != null) {
-                HomeUiState.Loaded(article)
+                HomeUiState.Loaded(article, settings.useHalfWidthParentheses)
             } else {
                 HomeUiState.Error("条文を取得できませんでした")
             }
@@ -43,6 +43,6 @@ class HomeScreenViewModel @Inject constructor(
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState
-    data class Loaded(val article: Article) : HomeUiState
+    data class Loaded(val article: Article, val useHalfWidthParentheses: Boolean) : HomeUiState
     data class Error(val message: String) : HomeUiState
 }

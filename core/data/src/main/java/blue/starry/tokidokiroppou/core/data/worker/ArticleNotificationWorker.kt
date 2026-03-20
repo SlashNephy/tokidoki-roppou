@@ -35,7 +35,7 @@ class ArticleNotificationWorker @AssistedInject constructor(
             return Result.retry()
         }
 
-        notificationSender.sendArticleNotification(article)
+        notificationSender.sendArticleNotification(article, settings.useHalfWidthParentheses)
         return Result.success()
     }
 

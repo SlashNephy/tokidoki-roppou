@@ -53,4 +53,10 @@ class SettingsScreenViewModel @Inject constructor(
             settingsRepository.setLawCodeEnabled(lawCode, enabled)
         }
     }
+
+    fun setUseHalfWidthParentheses(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setUseHalfWidthParentheses(enabled)
+        }
+    }
 }

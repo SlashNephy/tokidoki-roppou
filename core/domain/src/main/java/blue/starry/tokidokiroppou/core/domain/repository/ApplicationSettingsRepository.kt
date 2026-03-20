@@ -14,4 +14,6 @@ interface ApplicationSettingsRepository {
     suspend fun setNotificationEnabled(enabled: Boolean)
 
     suspend fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean)
+
+    suspend fun setUseHalfWidthParentheses(enabled: Boolean)
 }

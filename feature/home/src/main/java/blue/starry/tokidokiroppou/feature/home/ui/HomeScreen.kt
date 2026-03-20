@@ -74,7 +74,10 @@ fun HomeScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
                 ) {
-                    ArticleCard(article = state.article)
+                    ArticleCard(
+                        article = state.article,
+                        useHalfWidthParentheses = state.useHalfWidthParentheses,
+                    )
                 }
             }
 
