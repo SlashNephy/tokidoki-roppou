@@ -153,7 +153,7 @@ private fun SettingsContent(
                             val text = if (amendment != null) {
                                 "${num}・${formatIsoDate(amendment)}改正"
                             } else if (promulgation != null) {
-                                "${num}・${promulgation}公布"
+                                "${num}・${formatIsoDate(promulgation)}公布"
                             } else {
                                 num
                             }
