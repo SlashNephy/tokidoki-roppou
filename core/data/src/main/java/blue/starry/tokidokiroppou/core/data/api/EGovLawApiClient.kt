@@ -25,7 +25,7 @@ class EGovLawApiClient @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun getLawData(lawId: String): String {
-        val url = "$BASE_URL_V1/lawdata/$lawId"
+        val url = "$BASE_URL/law_data/$lawId"
         Timber.d("Fetching law data: %s", url)
         val response = httpClient.get(url)
         return response.bodyAsText()
@@ -33,7 +33,7 @@ class EGovLawApiClient @Inject constructor(
 
     suspend fun getLawRevisionInfo(lawId: String): LawRevisionInfo? {
         return try {
-            val url = "$BASE_URL_V2/law_revisions/$lawId"
+            val url = "$BASE_URL/law_revisions/$lawId"
             Timber.d("Fetching law revisions: %s", url)
             val response = httpClient.get(url)
             val body = response.bodyAsText()
@@ -64,7 +64,6 @@ class EGovLawApiClient @Inject constructor(
     }
 
     companion object {
-        private const val BASE_URL_V1 = "https://laws.e-gov.go.jp/api/1"
-        private const val BASE_URL_V2 = "https://laws.e-gov.go.jp/api/2"
+        private const val BASE_URL = "https://laws.e-gov.go.jp/api/2"
     }
 }
