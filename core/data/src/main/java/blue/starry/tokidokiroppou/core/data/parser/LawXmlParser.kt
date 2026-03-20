@@ -10,6 +10,7 @@ import javax.inject.Singleton
 
 data class LawParseResult(
     val lawNum: String?,
+    val promulgationDate: String?,
     val articles: List<Article>,
 )
 
@@ -23,6 +24,7 @@ class LawXmlParser @Inject constructor() {
         parser.setInput(StringReader(xml))
 
         var lawNum: String? = null
+        var promulgationDate: String? = null
         var insideLawNum = false
         var lawNumText = StringBuilder()
 
@@ -46,6 +48,17 @@ class LawXmlParser @Inject constructor() {
             when (eventType) {
                 XmlPullParser.START_TAG -> {
                     when (parser.name) {
+                        "Law" -> {
+                            if (promulgationDate == null) {
+                                val era = parser.getAttributeValue(null, "Era")
+                                val year = parser.getAttributeValue(null, "Year")
+                                val month = parser.getAttributeValue(null, "PromulgateMonth")
+                                val day = parser.getAttributeValue(null, "PromulgateDay")
+                                if (era != null && year != null && month != null && day != null) {
+                                    promulgationDate = formatPromulgationDate(era, year, month, day)
+                                }
+                            }
+                        }
                         "LawNum" -> {
                             if (lawNum == null) {
                                 insideLawNum = true
@@ -199,7 +212,23 @@ class LawXmlParser @Inject constructor() {
 
         return LawParseResult(
             lawNum = lawNum,
+            promulgationDate = promulgationDate,
             articles = articles,
         )
+    }
+
+    private fun formatPromulgationDate(era: String, year: String, month: String, day: String): String {
+        val eraName = when (era) {
+            "Meiji" -> "明治"
+            "Taisho" -> "大正"
+            "Showa" -> "昭和"
+            "Heisei" -> "平成"
+            "Reiwa" -> "令和"
+            else -> era
+        }
+        val y = year.toIntOrNull() ?: return ""
+        val m = month.toIntOrNull() ?: return ""
+        val d = day.toIntOrNull() ?: return ""
+        return "${eraName}${y}年${m}月${d}日"
     }
 }

@@ -9,6 +9,7 @@ import blue.starry.tokidokiroppou.core.data.db.toEntity
 import blue.starry.tokidokiroppou.core.data.parser.LawXmlParser
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -47,12 +48,15 @@ class LawRepositoryImpl @Inject constructor(
         return articles.randomOrNull()
     }
 
-    override fun observeLawNums(): Flow<Map<LawCode, String>> {
+    override fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>> {
         return lawMetadataDao.observeAll().map { entities ->
             entities.mapNotNull { entity ->
                 val lawCode = runCatching { LawCode.valueOf(entity.lawCode) }.getOrNull()
                     ?: return@mapNotNull null
-                lawCode to entity.lawNum
+                lawCode to LawMetadata(
+                    lawNum = entity.lawNum,
+                    promulgationDate = entity.promulgationDate,
+                )
             }.toMap()
         }
     }
@@ -67,7 +71,9 @@ class LawRepositoryImpl @Inject constructor(
                 Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
             }
             if (result.lawNum != null) {
-                lawMetadataDao.upsert(LawMetadataEntity(lawCode.name, result.lawNum))
+                lawMetadataDao.upsert(
+                    LawMetadataEntity(lawCode.name, result.lawNum, result.promulgationDate)
+                )
             }
             true
         } catch (e: Exception) {
@@ -90,7 +96,9 @@ class LawRepositoryImpl @Inject constructor(
                 Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
             }
             if (result.lawNum != null) {
-                lawMetadataDao.upsert(LawMetadataEntity(lawCode.name, result.lawNum))
+                lawMetadataDao.upsert(
+                    LawMetadataEntity(lawCode.name, result.lawNum, result.promulgationDate)
+                )
             }
             result.articles
         } catch (e: Exception) {
