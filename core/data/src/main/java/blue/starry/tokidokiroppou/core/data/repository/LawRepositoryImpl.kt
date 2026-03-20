@@ -61,6 +61,12 @@ class LawRepositoryImpl @Inject constructor(
         }
     }
 
+    suspend fun getLawCodesNeedingRefresh(): List<LawCode> {
+        val threshold = System.currentTimeMillis() - REFRESH_THRESHOLD_MS
+        val recentCodes = lawMetadataDao.getRecentlyRefreshedCodes(threshold).toSet()
+        return LawCode.entries.filter { it.name !in recentCodes }
+    }
+
     suspend fun refreshLawCode(lawCode: LawCode): Boolean {
         return try {
             val xml = apiClient.getLawData(lawCode.lawId)
@@ -84,6 +90,10 @@ class LawRepositoryImpl @Inject constructor(
 
     suspend fun isCacheAvailable(): Boolean {
         return articleDao.countAll() > 0
+    }
+
+    companion object {
+        private const val REFRESH_THRESHOLD_MS = 24 * 60 * 60 * 1000L // 24時間
     }
 
     private suspend fun fetchAndCache(lawCode: LawCode): List<Article> {

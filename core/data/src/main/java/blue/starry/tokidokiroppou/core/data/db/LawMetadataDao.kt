@@ -14,6 +14,9 @@ interface LawMetadataDao {
     @Query("SELECT lawNum FROM law_metadata WHERE lawCode = :lawCode")
     suspend fun getLawNum(lawCode: String): String?
 
+    @Query("SELECT lawCode FROM law_metadata WHERE lastRefreshedAt > :threshold")
+    suspend fun getRecentlyRefreshedCodes(threshold: Long): List<String>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: LawMetadataEntity)
 }
