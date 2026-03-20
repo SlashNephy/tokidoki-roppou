@@ -1,6 +1,7 @@
 package blue.starry.tokidokiroppou.core.data.notification
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -33,6 +34,7 @@ class ArticleNotificationSender @Inject constructor(
         notificationManager.createNotificationChannel(channel)
     }
 
+    @SuppressLint("MissingPermission")
     fun sendArticleNotification(article: Article) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
