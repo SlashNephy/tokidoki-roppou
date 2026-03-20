@@ -11,6 +11,11 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class AmendmentInfo(
+    val lawNum: String,
+    val promulgateDate: String,
+)
+
 @Singleton
 class EGovLawApiClient @Inject constructor(
     private val httpClient: HttpClient,
@@ -24,7 +29,7 @@ class EGovLawApiClient @Inject constructor(
         return response.bodyAsText()
     }
 
-    suspend fun getLastAmendmentDate(lawId: String): String? {
+    suspend fun getLastAmendmentInfo(lawId: String): AmendmentInfo? {
         return try {
             val url = "$BASE_URL_V2/law_revisions/$lawId"
             Timber.d("Fetching law revisions: %s", url)
@@ -38,7 +43,12 @@ class EGovLawApiClient @Inject constructor(
                 .firstOrNull { it["current_revision_status"]?.jsonPrimitive?.content == "CurrentEnforced" }
                 ?: return null
 
-            currentEnforced["amendment_promulgate_date"]?.jsonPrimitive?.content
+            val lawNum = currentEnforced["amendment_law_num"]?.jsonPrimitive?.content
+                ?: return null
+            val date = currentEnforced["amendment_promulgate_date"]?.jsonPrimitive?.content
+                ?: return null
+
+            AmendmentInfo(lawNum = lawNum, promulgateDate = date)
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch law revisions for %s", lawId)
             null
