@@ -8,6 +8,7 @@ import blue.starry.tokidokiroppou.core.data.db.toDomain
 import blue.starry.tokidokiroppou.core.data.db.toEntity
 import blue.starry.tokidokiroppou.core.data.parser.LawJsonParser
 import blue.starry.tokidokiroppou.core.domain.model.Article
+import blue.starry.tokidokiroppou.core.domain.model.extractArticleReferences
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
@@ -50,6 +51,13 @@ class LawRepositoryImpl @Inject constructor(
 
     override suspend fun getArticle(lawCode: LawCode, articleNumber: String): Article? {
         return articleDao.getByLawCodeAndArticleNumber(lawCode.name, articleNumber)?.toDomain()
+    }
+
+    override suspend fun getRelatedArticles(article: Article): List<Article> {
+        val refs = extractArticleReferences(article)
+        if (refs.isEmpty()) return emptyList()
+        return articleDao.getByLawCodeAndArticleNumbers(article.lawCode.name, refs)
+            .mapNotNull { it.toDomain() }
     }
 
     override fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>> {

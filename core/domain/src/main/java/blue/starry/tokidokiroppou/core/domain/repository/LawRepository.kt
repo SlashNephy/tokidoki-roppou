@@ -12,5 +12,7 @@ interface LawRepository {
 
     suspend fun getArticle(lawCode: LawCode, articleNumber: String): Article?
 
+    suspend fun getRelatedArticles(article: Article): List<Article>
+
     fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>>
 }

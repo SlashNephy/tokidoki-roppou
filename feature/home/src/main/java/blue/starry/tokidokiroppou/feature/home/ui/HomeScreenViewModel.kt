@@ -41,10 +41,11 @@ class HomeScreenViewModel @Inject constructor(
             val settings = settingsRepository.get()
             val article = lawRepository.getRandomArticle(settings.enabledLawCodes)
 
-            _uiState.value = if (article != null) {
-                HomeUiState.Loaded(article, settings.useHalfWidthParentheses)
+            if (article != null) {
+                val related = lawRepository.getRelatedArticles(article)
+                _uiState.value = HomeUiState.Loaded(article, related, settings.useHalfWidthParentheses)
             } else {
-                HomeUiState.Error("条文を取得できませんでした")
+                _uiState.value = HomeUiState.Error("条文を取得できませんでした")
             }
         }
     }
@@ -57,10 +58,11 @@ class HomeScreenViewModel @Inject constructor(
             val lawCode = runCatching { LawCode.valueOf(lawCodeName) }.getOrNull()
             val article = lawCode?.let { lawRepository.getArticle(it, articleNumber) }
 
-            _uiState.value = if (article != null) {
-                HomeUiState.Loaded(article, settings.useHalfWidthParentheses)
+            if (article != null) {
+                val related = lawRepository.getRelatedArticles(article)
+                _uiState.value = HomeUiState.Loaded(article, related, settings.useHalfWidthParentheses)
             } else {
-                HomeUiState.Error("条文を取得できませんでした")
+                _uiState.value = HomeUiState.Error("条文を取得できませんでした")
             }
         }
     }
@@ -68,6 +70,10 @@ class HomeScreenViewModel @Inject constructor(
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState
-    data class Loaded(val article: Article, val useHalfWidthParentheses: Boolean) : HomeUiState
+    data class Loaded(
+        val article: Article,
+        val relatedArticles: List<Article>,
+        val useHalfWidthParentheses: Boolean,
+    ) : HomeUiState
     data class Error(val message: String) : HomeUiState
 }
