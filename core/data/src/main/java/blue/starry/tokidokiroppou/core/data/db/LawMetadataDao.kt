@@ -11,6 +11,9 @@ interface LawMetadataDao {
     @Query("SELECT * FROM law_metadata")
     fun observeAll(): Flow<List<LawMetadataEntity>>
 
+    @Query("SELECT * FROM law_metadata WHERE lawCode = :lawCode")
+    suspend fun getByLawCode(lawCode: String): LawMetadataEntity?
+
     @Query("SELECT lawNum FROM law_metadata WHERE lawCode = :lawCode")
     suspend fun getLawNum(lawCode: String): String?
 

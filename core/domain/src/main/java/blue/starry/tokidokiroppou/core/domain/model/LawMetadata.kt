@@ -5,4 +5,5 @@ data class LawMetadata(
     val promulgationDate: String?,
     val lastAmendmentDate: String?,
     val lastAmendmentLawNum: String?,
+    val lastRefreshedAt: Long,
 )
