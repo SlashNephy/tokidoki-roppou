@@ -78,6 +78,22 @@ fun HomeScreen(
                         article = state.article,
                         useHalfWidthParentheses = state.useHalfWidthParentheses,
                     )
+                    if (state.relatedArticles.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "関連条文",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        state.relatedArticles.forEach { related ->
+                            ArticleCard(
+                                article = related,
+                                useHalfWidthParentheses = state.useHalfWidthParentheses,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
                 }
             }
 
