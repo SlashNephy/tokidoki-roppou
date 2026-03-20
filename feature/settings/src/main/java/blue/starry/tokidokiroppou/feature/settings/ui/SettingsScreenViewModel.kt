@@ -78,6 +78,9 @@ class SettingsScreenViewModel @Inject constructor(
     fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setLawCodeEnabled(lawCode, enabled)
+            if (enabled) {
+                lawRepository.refreshLawCode(lawCode)
+            }
         }
     }
 
