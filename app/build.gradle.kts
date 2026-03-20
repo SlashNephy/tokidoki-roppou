@@ -74,6 +74,7 @@ android {
     firebaseAppDistribution {
         artifactType = "APK"
         serviceCredentialsFile = rootProject.file("firebase-service-account.json").path
+        groups = "tester"
     }
 }
 

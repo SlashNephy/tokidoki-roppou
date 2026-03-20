@@ -16,7 +16,7 @@
 
 Firebase App Distribution でテスト版を配布しています。以下のリンクからテスターとして参加できます。
 
-<https://appdistribution.firebase.dev/i/8b467d295cf1a856>
+<https://appdistribution.firebase.dev/i/0276daed965e4d28>
 
 ## 機能
 
