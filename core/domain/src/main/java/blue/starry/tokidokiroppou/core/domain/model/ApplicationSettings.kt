@@ -5,7 +5,7 @@ import kotlin.time.Duration.Companion.hours
 
 data class ApplicationSettings(
     val notificationIntervalMinutes: Int = 60,
-    val enabledLawCodes: Set<LawCode> = LawCode.entries.toSet(),
+    val enabledLawCodes: Set<LawCode> = LawCode.entries.filter { it.category == LawCategory.ROPPOU }.toSet(),
     val isNotificationEnabled: Boolean = true,
     val useHalfWidthParentheses: Boolean = false,
 ) {
