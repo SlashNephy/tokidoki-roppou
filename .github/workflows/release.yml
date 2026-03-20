@@ -51,7 +51,7 @@ jobs:
             VERSION_NAME="1.0.0"
           fi
           echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
-      - run: ./gradlew assembleRelease appDistributionUploadRelease --releaseNotesFile "$RELEASE_NOTES_FILE" -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+      - run: ./gradlew assembleProductionRelease appDistributionUploadProductionRelease --releaseNotesFile "$RELEASE_NOTES_FILE" -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
         env:
           RELEASE_NOTES_FILE: ${{ github.workspace }}/release_notes.txt
           VERSION_NAME: ${{ steps.version.outputs.version_name }}

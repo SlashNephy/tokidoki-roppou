@@ -36,6 +36,17 @@ android {
         sarifReport = true
     }
 
+    flavorDimensions += "environment"
+    productFlavors {
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+        }
+        create("production") {
+            dimension = "environment"
+        }
+    }
+
     signingConfigs {
         if (keystorePropertiesFile.exists()) {
             create("release") {
