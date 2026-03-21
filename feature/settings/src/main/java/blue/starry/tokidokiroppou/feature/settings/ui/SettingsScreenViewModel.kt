@@ -92,6 +92,12 @@ class SettingsScreenViewModel @Inject constructor(
         }
     }
 
+    fun setExcludeSupplementaryProvisions(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setExcludeSupplementaryProvisions(enabled)
+        }
+    }
+
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 

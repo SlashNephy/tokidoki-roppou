@@ -35,10 +35,15 @@ class LawRepositoryImpl @Inject constructor(
         return fetchAndCache(lawCode)
     }
 
-    override suspend fun getRandomArticle(lawCodes: Set<LawCode>): Article? {
+    override suspend fun getRandomArticle(lawCodes: Set<LawCode>, excludeSupplementaryProvisions: Boolean): Article? {
         if (lawCodes.isEmpty()) return null
 
-        val entity = articleDao.getRandomByLawCodes(lawCodes.map { it.name })
+        val codes = lawCodes.map { it.name }
+        val entity = if (excludeSupplementaryProvisions) {
+            articleDao.getRandomByLawCodesExcludingSupplProvision(codes)
+        } else {
+            articleDao.getRandomByLawCodes(codes)
+        }
         if (entity != null) {
             return entity.toDomain()
         }
@@ -46,7 +51,12 @@ class LawRepositoryImpl @Inject constructor(
         // DB にデータがなければ取得を試みる
         val selectedLawCode = lawCodes.random()
         val articles = fetchAndCache(selectedLawCode)
-        return articles.randomOrNull()
+        val candidates = if (excludeSupplementaryProvisions) {
+            articles.filter { it.supplementaryProvisionLabel == null }
+        } else {
+            articles
+        }
+        return candidates.randomOrNull()
     }
 
     override suspend fun getArticle(lawCode: LawCode, articleNumber: String, supplementaryProvisionLabel: String?): Article? {

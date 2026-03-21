@@ -29,7 +29,7 @@ class ArticleNotificationWorker @AssistedInject constructor(
             return Result.success()
         }
 
-        val article = lawRepository.getRandomArticle(settings.enabledLawCodes)
+        val article = lawRepository.getRandomArticle(settings.enabledLawCodes, settings.excludeSupplementaryProvisions)
         if (article == null) {
             Timber.w("No article found")
             return Result.retry()

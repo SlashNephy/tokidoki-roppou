@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 interface LawRepository {
     suspend fun getArticles(lawCode: LawCode): List<Article>
 
-    suspend fun getRandomArticle(lawCodes: Set<LawCode>): Article?
+    suspend fun getRandomArticle(lawCodes: Set<LawCode>, excludeSupplementaryProvisions: Boolean = false): Article?
 
     suspend fun getArticle(lawCode: LawCode, articleNumber: String, supplementaryProvisionLabel: String? = null): Article?
 

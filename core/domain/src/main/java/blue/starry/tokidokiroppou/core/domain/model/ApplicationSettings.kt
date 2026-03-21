@@ -8,6 +8,7 @@ data class ApplicationSettings(
     val enabledLawCodes: Set<LawCode> = LawCode.entries.filter { it.category == LawCategory.ROPPOU }.toSet(),
     val isNotificationEnabled: Boolean = true,
     val useHalfWidthParentheses: Boolean = false,
+    val excludeSupplementaryProvisions: Boolean = false,
 ) {
     val notificationInterval: Duration
         get() = notificationIntervalMinutes.toLong().let { Duration.parse("${it}m") }

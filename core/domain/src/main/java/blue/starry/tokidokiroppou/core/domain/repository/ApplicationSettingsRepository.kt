@@ -16,4 +16,6 @@ interface ApplicationSettingsRepository {
     suspend fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean)
 
     suspend fun setUseHalfWidthParentheses(enabled: Boolean)
+
+    suspend fun setExcludeSupplementaryProvisions(enabled: Boolean)
 }

@@ -64,6 +64,7 @@ fun SettingsScreen(
             onIntervalChanged = viewModel::setNotificationInterval,
             onLawCodeEnabledChanged = viewModel::setLawCodeEnabled,
             onUseHalfWidthParenthesesChanged = viewModel::setUseHalfWidthParentheses,
+            onExcludeSupplementaryProvisionsChanged = viewModel::setExcludeSupplementaryProvisions,
             onClearCacheAndRefresh = viewModel::clearCacheAndRefresh,
         )
     }
@@ -78,6 +79,7 @@ private fun SettingsContent(
     onIntervalChanged: (Int) -> Unit,
     onLawCodeEnabledChanged: (LawCode, Boolean) -> Unit,
     onUseHalfWidthParenthesesChanged: (Boolean) -> Unit,
+    onExcludeSupplementaryProvisionsChanged: (Boolean) -> Unit,
     onClearCacheAndRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -141,6 +143,21 @@ private fun SettingsContent(
                         confirmButton = {},
                     )
                 }
+
+                SettingItem(
+                    headline = "附則を除外する",
+                    supporting = "通知対象から附則の条文を除外します",
+                    leadingIcon = Icons.Default.Book,
+                    trailing = {
+                        Switch(
+                            checked = settings.excludeSupplementaryProvisions,
+                            onCheckedChange = onExcludeSupplementaryProvisionsChanged,
+                        )
+                    },
+                    onClick = {
+                        onExcludeSupplementaryProvisionsChanged(!settings.excludeSupplementaryProvisions)
+                    },
+                )
             }
         }
 

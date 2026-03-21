@@ -60,6 +60,12 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun setExcludeSupplementaryProvisions(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_EXCLUDE_SUPPLEMENTARY_PROVISIONS] = enabled
+        }
+    }
+
     private fun Preferences.toApplicationSettings(): ApplicationSettings {
         val enabledCodes = this[KEY_ENABLED_LAW_CODES]
             ?.mapNotNull { name ->
@@ -73,6 +79,7 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
             enabledLawCodes = enabledCodes,
             isNotificationEnabled = this[KEY_NOTIFICATION_ENABLED] ?: true,
             useHalfWidthParentheses = this[KEY_USE_HALF_WIDTH_PARENTHESES] ?: false,
+            excludeSupplementaryProvisions = this[KEY_EXCLUDE_SUPPLEMENTARY_PROVISIONS] ?: false,
         )
     }
 
@@ -81,5 +88,6 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
         private val KEY_NOTIFICATION_ENABLED = booleanPreferencesKey("notification_enabled")
         private val KEY_ENABLED_LAW_CODES = stringSetPreferencesKey("enabled_law_codes")
         private val KEY_USE_HALF_WIDTH_PARENTHESES = booleanPreferencesKey("use_half_width_parentheses")
+        private val KEY_EXCLUDE_SUPPLEMENTARY_PROVISIONS = booleanPreferencesKey("exclude_supplementary_provisions")
     }
 }

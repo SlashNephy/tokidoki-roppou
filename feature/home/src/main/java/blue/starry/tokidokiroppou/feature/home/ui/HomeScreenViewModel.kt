@@ -40,7 +40,7 @@ class HomeScreenViewModel @Inject constructor(
             _uiState.value = HomeUiState.Loading
 
             val settings = settingsRepository.get()
-            val article = lawRepository.getRandomArticle(settings.enabledLawCodes)
+            val article = lawRepository.getRandomArticle(settings.enabledLawCodes, settings.excludeSupplementaryProvisions)
 
             if (article != null) {
                 val related = lawRepository.getRelatedArticles(article)

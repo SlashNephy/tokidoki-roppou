@@ -13,6 +13,9 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE lawCode IN (:lawCodes) ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomByLawCodes(lawCodes: List<String>): ArticleEntity?
 
+    @Query("SELECT * FROM articles WHERE lawCode IN (:lawCodes) AND supplementaryProvisionLabel IS NULL ORDER BY RANDOM() LIMIT 1")
+    suspend fun getRandomByLawCodesExcludingSupplProvision(lawCodes: List<String>): ArticleEntity?
+
     @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber = :articleNumber AND supplementaryProvisionLabel IS NULL LIMIT 1")
     suspend fun getByLawCodeAndArticleNumber(lawCode: String, articleNumber: String): ArticleEntity?
 
