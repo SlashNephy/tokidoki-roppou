@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -53,11 +54,6 @@ enum class TopLevelDestination(
         route = LawsRoute,
         icon = Icons.AutoMirrored.Filled.ListAlt,
         label = "法令一覧",
-    ),
-    SETTINGS(
-        route = SettingsRoute,
-        icon = Icons.Default.Settings,
-        label = "設定",
     ),
 }
 
@@ -111,6 +107,24 @@ fun App() {
         topBar = {
             TopAppBar(
                 title = { Text("ときどき六法") },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            navController.navigate(SettingsRoute) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "設定",
+                        )
+                    }
+                },
             )
         },
         bottomBar = {
