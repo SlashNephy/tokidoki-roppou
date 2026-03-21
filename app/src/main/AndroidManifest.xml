@@ -23,6 +23,10 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name="blue.starry.tokidokiroppou.core.data.notification.BookmarkActionReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"

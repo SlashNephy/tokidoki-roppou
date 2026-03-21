@@ -56,6 +56,8 @@ class ArticleNotificationSender @Inject constructor(
 
         val contentIntent = createContentIntent(article)
 
+        val bookmarkIntent = createBookmarkIntent(article)
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -67,6 +69,11 @@ class ArticleNotificationSender @Inject constructor(
                     .setSummaryText(article.lawCode.displayName)
             )
             .setContentIntent(contentIntent)
+            .addAction(
+                R.drawable.ic_notification,
+                "保存",
+                bookmarkIntent,
+            )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()
@@ -94,6 +101,22 @@ class ArticleNotificationSender @Inject constructor(
             context,
             article.hashCode(),
             launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private fun createBookmarkIntent(article: Article): PendingIntent {
+        val intent = Intent(context, BookmarkActionReceiver::class.java).apply {
+            action = BookmarkActionReceiver.ACTION_BOOKMARK
+            putExtra(BookmarkActionReceiver.EXTRA_LAW_CODE, article.lawCode.name)
+            putExtra(BookmarkActionReceiver.EXTRA_ARTICLE_NUMBER, article.articleNumber)
+            putExtra(BookmarkActionReceiver.EXTRA_SUPPLEMENTARY_PROVISION_LABEL, article.supplementaryProvisionLabel ?: "")
+        }
+
+        return PendingIntent.getBroadcast(
+            context,
+            article.hashCode() + 1,
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
