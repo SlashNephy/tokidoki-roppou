@@ -33,7 +33,7 @@ fun buildAnnotatedArticleText(
     val rawMatches = mutableListOf<RawMatch>()
 
     // 第X条のY (漢数字)
-    val subKanji = Regex("第([一二三四五六七八九十百千万]+)条の([一二三四五六七八九十百千万]+)")
+    val subKanji = Regex("第([〇一二三四五六七八九十百千万]+)条の([〇一二三四五六七八九十百千万]+)")
     for (m in subKanji.findAll(displayedText)) {
         val main = kanjiToArabicForAnnotator(m.groupValues[1])
         val sub = kanjiToArabicForAnnotator(m.groupValues[2])
@@ -59,7 +59,7 @@ fun buildAnnotatedArticleText(
     }
 
     // 第X条 (漢数字、第X条のY を除外)
-    val mainKanji = Regex("第([一二三四五六七八九十百千万]+)条(?!の[一二三四五六七八九十百千万])")
+    val mainKanji = Regex("第([〇一二三四五六七八九十百千万]+)条(?!の[一二三四五六七八九十百千万])")
     for (m in mainKanji.findAll(displayedText)) {
         val num = kanjiToArabicForAnnotator(m.groupValues[1])
         if (num > 0) {
@@ -202,11 +202,15 @@ private fun String.stripParentheses(): String {
 }
 
 private val kanjiDigitMapForAnnotator = mapOf(
-    '一' to 1, '二' to 2, '三' to 3, '四' to 4, '五' to 5,
+    '〇' to 0, '一' to 1, '二' to 2, '三' to 3, '四' to 4, '五' to 5,
     '六' to 6, '七' to 7, '八' to 8, '九' to 9,
 )
 
 private fun kanjiToArabicForAnnotator(kanji: String): Int {
+    if ('〇' in kanji) {
+        return kanji.fold(0) { acc, ch -> acc * 10 + (kanjiDigitMapForAnnotator[ch] ?: 0) }
+    }
+
     var result = 0
     var current = 0
     for (ch in kanji) {

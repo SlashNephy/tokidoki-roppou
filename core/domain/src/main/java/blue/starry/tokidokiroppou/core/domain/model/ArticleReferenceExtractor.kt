@@ -10,7 +10,7 @@ fun extractArticleReferences(article: Article): List<String> {
     val refs = mutableSetOf<String>()
 
     // 第X条のY パターン (先にマッチさせる)
-    val subArticlePattern = Regex("第([一二三四五六七八九十百千万]+)条の([一二三四五六七八九十百千万]+)")
+    val subArticlePattern = Regex("第([〇一二三四五六七八九十百千万]+)条の([〇一二三四五六七八九十百千万]+)")
     for (match in subArticlePattern.findAll(text)) {
         val main = kanjiToArabicNumber(match.groupValues[1])
         val sub = kanjiToArabicNumber(match.groupValues[2])
@@ -20,7 +20,7 @@ fun extractArticleReferences(article: Article): List<String> {
     }
 
     // 第X条 パターン (第X条のY は除外)
-    val articlePattern = Regex("第([一二三四五六七八九十百千万]+)条(?!の[一二三四五六七八九十百千万])")
+    val articlePattern = Regex("第([〇一二三四五六七八九十百千万]+)条(?!の[一二三四五六七八九十百千万])")
     for (match in articlePattern.findAll(text)) {
         val num = kanjiToArabicNumber(match.groupValues[1])
         if (num > 0) {
@@ -71,11 +71,15 @@ fun extractArticleReferences(article: Article): List<String> {
 }
 
 private val kanjiDigitMap = mapOf(
-    '一' to 1, '二' to 2, '三' to 3, '四' to 4, '五' to 5,
+    '〇' to 0, '一' to 1, '二' to 2, '三' to 3, '四' to 4, '五' to 5,
     '六' to 6, '七' to 7, '八' to 8, '九' to 9,
 )
 
 private fun kanjiToArabicNumber(kanji: String): Int {
+    if ('〇' in kanji) {
+        return kanji.fold(0) { acc, ch -> acc * 10 + (kanjiDigitMap[ch] ?: 0) }
+    }
+
     var result = 0
     var current = 0
     for (ch in kanji) {
