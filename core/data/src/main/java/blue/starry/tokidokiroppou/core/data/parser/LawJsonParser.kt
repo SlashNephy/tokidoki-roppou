@@ -156,6 +156,9 @@ class LawJsonParser @Inject constructor() {
             is JsonPrimitive -> node.content
             is JsonArray -> node.joinToString("") { extractText(it) }
             is JsonObject -> {
+                val tag = node["tag"]?.jsonPrimitive?.content
+                // ルビの読み仮名 (Rt) は除外し、本文 (Rb) のみ抽出する
+                if (tag == "Rt") return ""
                 val children = node["children"]?.jsonArray ?: return ""
                 children.joinToString("") { extractText(it) }
             }
