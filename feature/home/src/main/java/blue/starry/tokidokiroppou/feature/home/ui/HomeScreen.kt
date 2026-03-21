@@ -14,12 +14,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -105,23 +102,9 @@ fun HomeScreen(
                                 scrollState.animateScrollTo(targetY)
                             }
                         },
+                        isBookmarked = isBookmarked,
+                        onBookmarkClick = { viewModel.toggleBookmark() },
                     )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        FilledTonalButton(
-                            onClick = { viewModel.toggleBookmark() },
-                        ) {
-                            Icon(
-                                imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = if (isBookmarked) "保存済み" else "保存",
-                            )
-                            Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                            Text(if (isBookmarked) "保存済み" else "保存")
-                        }
-                    }
 
                     state.lawMetadata?.let { metadata ->
                         LawAmendmentInfo(
