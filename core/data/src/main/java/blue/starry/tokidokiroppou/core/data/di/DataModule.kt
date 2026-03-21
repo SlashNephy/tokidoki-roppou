@@ -9,10 +9,13 @@ import androidx.room.Room
 import androidx.work.WorkManager
 import blue.starry.tokidokiroppou.core.data.db.AppDatabase
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
+import blue.starry.tokidokiroppou.core.data.db.BookmarkDao
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
 import blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImpl
+import blue.starry.tokidokiroppou.core.data.repository.BookmarkRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
+import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.Binds
 import dagger.Module
@@ -32,6 +35,10 @@ abstract class DataBindsModule {
     @Binds
     @Singleton
     abstract fun bindApplicationSettingsRepository(impl: ApplicationSettingsRepositoryImpl): ApplicationSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBookmarkRepository(impl: BookmarkRepositoryImpl): BookmarkRepository
 }
 
 @Module
@@ -60,6 +67,12 @@ object DataProvidesModule {
     @Singleton
     fun provideLawMetadataDao(database: AppDatabase): LawMetadataDao {
         return database.lawMetadataDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideBookmarkDao(database: AppDatabase): BookmarkDao {
+        return database.bookmarkDao()
     }
 
     @Provides
