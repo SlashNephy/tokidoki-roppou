@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.TextFormat
-import androidx.compose.material3.Scaffold
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,30 +47,25 @@ fun SettingsScreen(
     val lawMetadata by viewModel.lawMetadata.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
-    Scaffold { innerPadding ->
-        val currentSettings = settings
-        if (currentSettings == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            SettingsContent(
-                settings = currentSettings,
-                lawMetadata = lawMetadata,
-                isRefreshing = isRefreshing,
-                onNotificationEnabledChanged = viewModel::setNotificationEnabled,
-                onIntervalChanged = viewModel::setNotificationInterval,
-                onLawCodeEnabledChanged = viewModel::setLawCodeEnabled,
-                onUseHalfWidthParenthesesChanged = viewModel::setUseHalfWidthParentheses,
-                onClearCacheAndRefresh = viewModel::clearCacheAndRefresh,
-                modifier = Modifier.padding(innerPadding),
-            )
+    val currentSettings = settings
+    if (currentSettings == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
         }
+    } else {
+        SettingsContent(
+            settings = currentSettings,
+            lawMetadata = lawMetadata,
+            isRefreshing = isRefreshing,
+            onNotificationEnabledChanged = viewModel::setNotificationEnabled,
+            onIntervalChanged = viewModel::setNotificationInterval,
+            onLawCodeEnabledChanged = viewModel::setLawCodeEnabled,
+            onUseHalfWidthParenthesesChanged = viewModel::setUseHalfWidthParentheses,
+            onClearCacheAndRefresh = viewModel::clearCacheAndRefresh,
+        )
     }
 }
 
