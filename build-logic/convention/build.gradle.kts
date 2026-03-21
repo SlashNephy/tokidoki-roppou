@@ -2,6 +2,16 @@ plugins {
     `kotlin-dsl`
 }
 
+dependencies {
+    compileOnly(libs.plugins.android.application.toDep())
+    compileOnly(libs.plugins.android.library.toDep())
+    compileOnly(libs.plugins.kotlin.android.toDep())
+    compileOnly(libs.plugins.kotlin.compose.toDep())
+    compileOnly(libs.plugins.kotlin.serialization.toDep())
+    compileOnly(libs.ksp.gradle.plugin)
+    compileOnly(libs.hilt.gradle.plugin)
+}
+
 gradlePlugin {
     plugins {
         register("androidApplication") {
@@ -25,16 +35,6 @@ gradlePlugin {
             implementationClass = "KotlinSerializationConventionPlugin"
         }
     }
-}
-
-dependencies {
-    compileOnly(libs.plugins.android.application.toDep())
-    compileOnly(libs.plugins.android.library.toDep())
-    compileOnly(libs.plugins.kotlin.android.toDep())
-    compileOnly(libs.plugins.kotlin.compose.toDep())
-    compileOnly(libs.plugins.kotlin.serialization.toDep())
-    compileOnly(libs.plugins.ksp.toDep())
-    compileOnly(libs.plugins.hilt.toDep())
 }
 
 fun Provider<PluginDependency>.toDep() = map {
