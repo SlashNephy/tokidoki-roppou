@@ -120,6 +120,7 @@ jobs:
           queries: security-and-quality
           dependency-caching: true
       - run: ./gradlew assembleStagingRelease
+        continue-on-error: true # CodeQL does not yet support Kotlin 2.3.20
       - uses: github/codeql-action/analyze@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
         continue-on-error: true
         with:
