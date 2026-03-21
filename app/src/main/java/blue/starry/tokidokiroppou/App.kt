@@ -3,6 +3,7 @@ package blue.starry.tokidokiroppou
 import android.content.Intent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Settings
@@ -30,6 +31,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import blue.starry.tokidokiroppou.core.data.notification.ArticleNotificationSender
+import blue.starry.tokidokiroppou.feature.collection.ui.CollectionRoute
+import blue.starry.tokidokiroppou.feature.collection.ui.CollectionScreen
 import blue.starry.tokidokiroppou.feature.home.ui.HomeRoute
 import blue.starry.tokidokiroppou.feature.home.ui.HomeScreen
 import blue.starry.tokidokiroppou.feature.laws.ui.LawsRoute
@@ -54,6 +57,11 @@ enum class TopLevelDestination(
         route = LawsRoute,
         icon = Icons.AutoMirrored.Filled.ListAlt,
         label = "法令一覧",
+    ),
+    COLLECTION(
+        route = CollectionRoute,
+        icon = Icons.Default.Bookmark,
+        label = "コレクション",
     ),
 }
 
@@ -166,6 +174,17 @@ fun App() {
                 LawsScreen(
                     onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
                         navController.navigate(HomeRoute(lawCode.name, articleNumber, supplementaryProvisionLabel)) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
+                        }
+                    },
+                )
+            }
+            composable<CollectionRoute> {
+                CollectionScreen(
+                    onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
+                        navController.navigate(HomeRoute(lawCode, articleNumber, supplementaryProvisionLabel)) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 inclusive = true
                             }

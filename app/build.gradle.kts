@@ -84,6 +84,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":feature:home"))
     implementation(project(":feature:laws"))
+    implementation(project(":feature:collection"))
     implementation(project(":feature:settings"))
 
     implementation(platform(libs.compose.bom))
