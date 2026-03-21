@@ -23,18 +23,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
+import blue.starry.tokidokiroppou.core.domain.model.findArticleReferenceRanges
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 import blue.starry.tokidokiroppou.core.ui.component.ArticleCard
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun HomeScreen(
@@ -64,16 +72,38 @@ fun HomeScreen(
             }
 
             is HomeUiState.Loaded -> {
+                val scrollState = rememberScrollState()
+                val coroutineScope = rememberCoroutineScope()
+                val relatedCardPositions = remember { mutableStateMapOf<String, Int>() }
+
+                val availableArticleNumbers = remember(state.relatedArticles) {
+                    state.relatedArticles.map { it.articleNumber }.toSet()
+                }
+                val referenceMatches = remember(state.article, state.useHalfWidthParentheses, availableArticleNumbers) {
+                    findArticleReferenceRanges(
+                        displayedText = state.article.fullText(state.useHalfWidthParentheses),
+                        article = state.article,
+                        availableArticleNumbers = availableArticleNumbers,
+                    )
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     ArticleCard(
                         article = state.article,
                         useHalfWidthParentheses = state.useHalfWidthParentheses,
+                        referenceMatches = referenceMatches,
+                        onReferenceClick = { articleNumber ->
+                            val targetY = relatedCardPositions[articleNumber] ?: return@ArticleCard
+                            coroutineScope.launch {
+                                scrollState.animateScrollTo(targetY)
+                            }
+                        },
                     )
 
                     state.lawMetadata?.let { metadata ->
@@ -107,6 +137,10 @@ fun HomeScreen(
                             ArticleCard(
                                 article = related,
                                 useHalfWidthParentheses = state.useHalfWidthParentheses,
+                                modifier = Modifier.onGloballyPositioned { coordinates ->
+                                    relatedCardPositions[related.articleNumber] =
+                                        coordinates.positionInParent().y.roundToInt()
+                                },
                             )
                         }
                     }
