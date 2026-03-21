@@ -54,6 +54,10 @@ private val monthPattern =
 private val dayPattern =
     Regex("月([〇一二三四五六七八九十百]+)日")
 
+// 「六箇月」→「6箇月」
+private val monthDurationPattern =
+    Regex("([〇一二三四五六七八九十百]+)箇月")
+
 private fun String.convertLegalKanjiNumbers(): String {
     var result = legalNumberPattern.replace(this) { match ->
         "第${kanjiToArabic(match.groupValues[1])}${match.groupValues[2]}"
@@ -72,6 +76,9 @@ private fun String.convertLegalKanjiNumbers(): String {
     }
     result = monthPattern.replace(result) { match ->
         "${kanjiToArabic(match.groupValues[1])}月"
+    }
+    result = monthDurationPattern.replace(result) { match ->
+        "${kanjiToArabic(match.groupValues[1])}箇月"
     }
     return result
 }
