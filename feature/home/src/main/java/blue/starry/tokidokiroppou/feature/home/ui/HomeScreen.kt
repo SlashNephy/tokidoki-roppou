@@ -20,7 +20,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,24 +42,11 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.loadRandomArticle() },
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "別の条文を表示",
-                )
-            }
-        },
-    ) { innerPadding ->
+    Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
             is HomeUiState.Loading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(
@@ -81,7 +67,6 @@ fun HomeScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -135,9 +120,7 @@ fun HomeScreen(
 
             is HomeUiState.Error -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(
@@ -156,6 +139,18 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        FloatingActionButton(
+            onClick = { viewModel.loadRandomArticle() },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "別の条文を表示",
+            )
         }
     }
 }
@@ -187,7 +182,7 @@ private fun LawAmendmentInfo(
 @Composable
 private fun DataSourceFooter(metadata: LawMetadata) {
     Text(
-        text = "法令データはデジタル庁の提供する、e-Gov 法令 API より取得されています。 (取得日時: ${formatTimestamp(metadata.lastRefreshedAt)})",
+        text = "法令データはデジタル庁の提供する、e-Gov 法令 API より取得されています。\n(取得日時: ${formatTimestamp(metadata.lastRefreshedAt)})",
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp),
