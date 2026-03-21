@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
@@ -78,11 +79,15 @@ fun ArticleCard(
                         modifier = Modifier.weight(1f),
                     )
                     if (onBookmarkClick != null) {
-                        IconButton(onClick = onBookmarkClick) {
+                        IconButton(
+                            onClick = onBookmarkClick,
+                            modifier = Modifier.size(24.dp),
+                        ) {
                             Icon(
                                 imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                 contentDescription = if (isBookmarked) "保存済み" else "保存",
                                 tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
