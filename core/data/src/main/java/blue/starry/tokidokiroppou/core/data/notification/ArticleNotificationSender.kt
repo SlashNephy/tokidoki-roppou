@@ -27,9 +27,10 @@ class ArticleNotificationSender @Inject constructor(
         val channel = NotificationChannel(
             CHANNEL_ID,
             "条文通知",
-            NotificationManager.IMPORTANCE_DEFAULT,
+            NotificationManager.IMPORTANCE_LOW,
         ).apply {
             description = "六法の条文を定期的にお届けします"
+            setSound(null, null)
         }
 
         val notificationManager = context.getSystemService(NotificationManager::class.java)
