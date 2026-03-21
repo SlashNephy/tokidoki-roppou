@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
-import blue.starry.tokidokiroppou.core.domain.model.findArticleReferenceRanges
+import blue.starry.tokidokiroppou.core.domain.model.buildAnnotatedArticleText
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 import blue.starry.tokidokiroppou.core.ui.component.ArticleCard
 import kotlinx.coroutines.launch
@@ -76,14 +76,11 @@ fun HomeScreen(
                 val coroutineScope = rememberCoroutineScope()
                 val relatedCardPositions = remember { mutableStateMapOf<String, Int>() }
 
-                val availableArticleNumbers = remember(state.relatedArticles) {
-                    state.relatedArticles.map { it.articleNumber }.toSet()
-                }
-                val referenceMatches = remember(state.article, state.useHalfWidthParentheses, availableArticleNumbers) {
-                    findArticleReferenceRanges(
+                val annotatedArticleText = remember(state.article, state.relatedArticles, state.useHalfWidthParentheses) {
+                    buildAnnotatedArticleText(
                         displayedText = state.article.fullText(state.useHalfWidthParentheses),
                         article = state.article,
-                        availableArticleNumbers = availableArticleNumbers,
+                        relatedArticles = state.relatedArticles,
                     )
                 }
 
@@ -97,7 +94,7 @@ fun HomeScreen(
                     ArticleCard(
                         article = state.article,
                         useHalfWidthParentheses = state.useHalfWidthParentheses,
-                        referenceMatches = referenceMatches,
+                        annotatedArticleText = annotatedArticleText,
                         onReferenceClick = { articleNumber ->
                             val targetY = relatedCardPositions[articleNumber] ?: return@ArticleCard
                             coroutineScope.launch {

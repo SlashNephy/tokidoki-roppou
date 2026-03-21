@@ -24,14 +24,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import blue.starry.tokidokiroppou.core.domain.model.AnnotatedArticleText
 import blue.starry.tokidokiroppou.core.domain.model.Article
-import blue.starry.tokidokiroppou.core.domain.model.ArticleReferenceMatch
 
 @Composable
 fun ArticleCard(
     article: Article,
     useHalfWidthParentheses: Boolean = false,
-    referenceMatches: List<ArticleReferenceMatch> = emptyList(),
+    annotatedArticleText: AnnotatedArticleText? = null,
     onReferenceClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -70,15 +70,14 @@ fun ArticleCard(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (referenceMatches.isNotEmpty() && onReferenceClick != null) {
-                    val plainText = article.fullText(useHalfWidthParentheses)
-                    val annotatedText = buildAnnotatedString {
-                        append(plainText)
-                        for (match in referenceMatches) {
-                            if (match.range.last < plainText.length) {
+                if (annotatedArticleText != null && onReferenceClick != null) {
+                    val annotatedString = buildAnnotatedString {
+                        append(annotatedArticleText.text)
+                        for (ref in annotatedArticleText.references) {
+                            if (ref.range.last < annotatedArticleText.text.length) {
                                 addLink(
                                     clickable = LinkAnnotation.Clickable(
-                                        tag = match.articleNumber,
+                                        tag = ref.articleNumber,
                                         styles = TextLinkStyles(
                                             style = SpanStyle(
                                                 fontWeight = FontWeight.Bold,
@@ -87,17 +86,17 @@ fun ArticleCard(
                                             ),
                                         ),
                                     ) {
-                                        onReferenceClick(match.articleNumber)
+                                        onReferenceClick(ref.articleNumber)
                                     },
-                                    start = match.range.first,
-                                    end = match.range.last + 1,
+                                    start = ref.range.first,
+                                    end = ref.range.last + 1,
                                 )
                             }
                         }
                     }
 
                     Text(
-                        text = annotatedText,
+                        text = annotatedString,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             lineHeight = 24.sp,
                         ),
