@@ -5,7 +5,6 @@ plugins {
 dependencies {
     compileOnly(libs.plugins.android.application.toDep())
     compileOnly(libs.plugins.android.library.toDep())
-    compileOnly(libs.plugins.kotlin.android.toDep())
     compileOnly(libs.plugins.kotlin.compose.toDep())
     compileOnly(libs.plugins.kotlin.serialization.toDep())
     compileOnly(libs.ksp.gradle.plugin)
