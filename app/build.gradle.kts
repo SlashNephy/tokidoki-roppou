@@ -1,4 +1,3 @@
-import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -72,7 +71,7 @@ android {
         }
     }
 
-    firebaseAppDistribution {
+    firebaseAppDistributionDefault {
         artifactType = "APK"
         serviceCredentialsFile = rootProject.file("firebase-service-account.json").path
         groups = "tester"
