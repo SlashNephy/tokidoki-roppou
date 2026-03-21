@@ -13,8 +13,11 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE lawCode IN (:lawCodes) ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomByLawCodes(lawCodes: List<String>): ArticleEntity?
 
-    @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber = :articleNumber LIMIT 1")
+    @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber = :articleNumber AND supplementaryProvisionLabel IS NULL LIMIT 1")
     suspend fun getByLawCodeAndArticleNumber(lawCode: String, articleNumber: String): ArticleEntity?
+
+    @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber = :articleNumber AND supplementaryProvisionLabel = :supplementaryProvisionLabel LIMIT 1")
+    suspend fun getByLawCodeAndArticleNumberAndSupplProvision(lawCode: String, articleNumber: String, supplementaryProvisionLabel: String): ArticleEntity?
 
     @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber IN (:articleNumbers)")
     suspend fun getByLawCodeAndArticleNumbers(lawCode: String, articleNumbers: List<String>): List<ArticleEntity>
@@ -33,4 +36,15 @@ interface ArticleDao {
 
     @Query("SELECT COUNT(*) FROM articles")
     suspend fun countAll(): Int
+
+    @Query(
+        """
+        SELECT * FROM articles
+        WHERE articleNumber LIKE '%' || :query || '%'
+           OR articleTitle LIKE '%' || :query || '%'
+           OR articleCaption LIKE '%' || :query || '%'
+           OR paragraphsJson LIKE '%' || :query || '%'
+        """
+    )
+    suspend fun search(query: String): List<ArticleEntity>
 }

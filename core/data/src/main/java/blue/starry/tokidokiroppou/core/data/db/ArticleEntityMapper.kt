@@ -23,6 +23,7 @@ fun Article.toEntity(): ArticleEntity {
         articleTitle = articleTitle,
         articleCaption = articleCaption,
         paragraphsJson = paragraphsJson,
+        supplementaryProvisionLabel = supplementaryProvisionLabel,
     )
 }
 
@@ -38,5 +39,6 @@ fun ArticleEntity.toDomain(): Article? {
         articleTitle = articleTitle,
         articleCaption = articleCaption,
         paragraphs = paragraphs.map { Article.Paragraph(it.number, it.text) },
+        supplementaryProvisionLabel = supplementaryProvisionLabel,
     )
 }

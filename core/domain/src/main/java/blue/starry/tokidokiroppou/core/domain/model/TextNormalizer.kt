@@ -47,6 +47,13 @@ private val eraYearPattern =
 private val lawNumNumberPattern =
     Regex("第([一二三四五六七八九十百千万]+)号")
 
+// 日付の月日: 「五月二三日」→「5月23日」
+private val monthPattern =
+    Regex("([一二三四五六七八九十百]+)月")
+
+private val dayPattern =
+    Regex("月([一二三四五六七八九十百]+)日")
+
 private fun String.convertLegalKanjiNumbers(): String {
     var result = legalNumberPattern.replace(this) { match ->
         "第${kanjiToArabic(match.groupValues[1])}${match.groupValues[2]}"
@@ -59,6 +66,12 @@ private fun String.convertLegalKanjiNumbers(): String {
     }
     result = lawNumNumberPattern.replace(result) { match ->
         "第${kanjiToArabic(match.groupValues[1])}号"
+    }
+    result = dayPattern.replace(result) { match ->
+        "月${kanjiToArabic(match.groupValues[1])}日"
+    }
+    result = monthPattern.replace(result) { match ->
+        "${kanjiToArabic(match.groupValues[1])}月"
     }
     return result
 }

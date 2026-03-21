@@ -29,7 +29,7 @@ class HomeScreenViewModel @Inject constructor(
     init {
         val route = savedStateHandle.toRoute<HomeRoute>()
         if (route.lawCode != null && route.articleNumber != null) {
-            loadSpecificArticle(route.lawCode, route.articleNumber)
+            loadSpecificArticle(route.lawCode, route.articleNumber, route.supplementaryProvisionLabel)
         } else {
             loadRandomArticle()
         }
@@ -52,13 +52,13 @@ class HomeScreenViewModel @Inject constructor(
         }
     }
 
-    private fun loadSpecificArticle(lawCodeName: String, articleNumber: String) {
+    private fun loadSpecificArticle(lawCodeName: String, articleNumber: String, supplementaryProvisionLabel: String? = null) {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
 
             val settings = settingsRepository.get()
             val lawCode = runCatching { LawCode.valueOf(lawCodeName) }.getOrNull()
-            val article = lawCode?.let { lawRepository.getArticle(it, articleNumber) }
+            val article = lawCode?.let { lawRepository.getArticle(it, articleNumber, supplementaryProvisionLabel) }
 
             if (article != null) {
                 val related = lawRepository.getRelatedArticles(article)

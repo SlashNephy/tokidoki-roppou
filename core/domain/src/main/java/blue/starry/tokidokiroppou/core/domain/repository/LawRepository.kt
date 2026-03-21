@@ -10,11 +10,13 @@ interface LawRepository {
 
     suspend fun getRandomArticle(lawCodes: Set<LawCode>): Article?
 
-    suspend fun getArticle(lawCode: LawCode, articleNumber: String): Article?
+    suspend fun getArticle(lawCode: LawCode, articleNumber: String, supplementaryProvisionLabel: String? = null): Article?
 
     suspend fun getRelatedArticles(article: Article): List<Article>
 
     suspend fun getLawMetadata(lawCode: LawCode): LawMetadata?
 
     fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>>
+
+    suspend fun searchArticles(query: String): Map<LawCode, List<Article>>
 }

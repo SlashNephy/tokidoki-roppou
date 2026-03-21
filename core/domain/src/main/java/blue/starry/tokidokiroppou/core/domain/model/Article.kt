@@ -6,6 +6,7 @@ data class Article(
     val articleTitle: String,
     val articleCaption: String,
     val paragraphs: List<Paragraph>,
+    val supplementaryProvisionLabel: String? = null,
 ) {
     data class Paragraph(
         val number: Int,
@@ -13,10 +14,17 @@ data class Article(
     )
 
     val displayTitle: String
-        get() = if (articleCaption.isNotEmpty()) {
-            "$articleTitle $articleCaption"
-        } else {
-            "$articleTitle"
+        get() {
+            val title = if (articleCaption.isNotEmpty()) {
+                "$articleTitle $articleCaption"
+            } else {
+                articleTitle
+            }
+            return if (supplementaryProvisionLabel != null) {
+                "$supplementaryProvisionLabel 附則$title"
+            } else {
+                title
+            }
         }
 
     val fullText: String

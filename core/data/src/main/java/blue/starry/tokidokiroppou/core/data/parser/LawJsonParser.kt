@@ -31,23 +31,34 @@ class LawJsonParser @Inject constructor() {
         return LawParseResult(articles = articles)
     }
 
-    private fun collectArticles(node: JsonObject, lawCode: LawCode, articles: MutableList<Article>) {
+    private fun collectArticles(
+        node: JsonObject,
+        lawCode: LawCode,
+        articles: MutableList<Article>,
+        supplementaryProvisionLabel: String? = null,
+    ) {
         val tag = node["tag"]?.jsonPrimitive?.content ?: return
 
         if (tag == "Article") {
-            parseArticle(node, lawCode)?.let { articles.add(it) }
+            parseArticle(node, lawCode, supplementaryProvisionLabel)?.let { articles.add(it) }
             return
+        }
+
+        val label = if (tag == "SupplProvision") {
+            node["attr"]?.jsonObject?.get("AmendLawNum")?.jsonPrimitive?.content
+        } else {
+            supplementaryProvisionLabel
         }
 
         val children = node["children"]?.jsonArray ?: return
         for (child in children) {
             if (child is JsonObject) {
-                collectArticles(child, lawCode, articles)
+                collectArticles(child, lawCode, articles, label)
             }
         }
     }
 
-    private fun parseArticle(node: JsonObject, lawCode: LawCode): Article? {
+    private fun parseArticle(node: JsonObject, lawCode: LawCode, supplementaryProvisionLabel: String? = null): Article? {
         val num = node["attr"]?.jsonObject?.get("Num")?.jsonPrimitive?.content ?: ""
         val children = node["children"]?.jsonArray ?: return null
 
@@ -79,6 +90,7 @@ class LawJsonParser @Inject constructor() {
             articleTitle = articleTitle,
             articleCaption = articleCaption,
             paragraphs = paragraphs,
+            supplementaryProvisionLabel = supplementaryProvisionLabel,
         )
     }
 

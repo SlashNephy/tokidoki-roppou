@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,6 +31,8 @@ import androidx.navigation.compose.rememberNavController
 import blue.starry.tokidokiroppou.core.data.notification.ArticleNotificationSender
 import blue.starry.tokidokiroppou.feature.home.ui.HomeRoute
 import blue.starry.tokidokiroppou.feature.home.ui.HomeScreen
+import blue.starry.tokidokiroppou.feature.laws.ui.LawsRoute
+import blue.starry.tokidokiroppou.feature.laws.ui.LawsScreen
 import blue.starry.tokidokiroppou.feature.settings.ui.SettingsScreen
 import kotlinx.serialization.Serializable
 
@@ -45,6 +48,11 @@ enum class TopLevelDestination(
         route = HomeRoute(),
         icon = Icons.Default.Home,
         label = "ホーム",
+    ),
+    LAWS(
+        route = LawsRoute,
+        icon = Icons.AutoMirrored.Filled.ListAlt,
+        label = "法令一覧",
     ),
     SETTINGS(
         route = SettingsRoute,
@@ -139,6 +147,17 @@ fun App() {
         ) {
             composable<HomeRoute> {
                 HomeScreen()
+            }
+            composable<LawsRoute> {
+                LawsScreen(
+                    onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
+                        navController.navigate(HomeRoute(lawCode.name, articleNumber, supplementaryProvisionLabel)) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
+                        }
+                    },
+                )
             }
             composable<SettingsRoute> {
                 SettingsScreen()

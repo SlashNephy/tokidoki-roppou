@@ -49,8 +49,13 @@ class LawRepositoryImpl @Inject constructor(
         return articles.randomOrNull()
     }
 
-    override suspend fun getArticle(lawCode: LawCode, articleNumber: String): Article? {
-        return articleDao.getByLawCodeAndArticleNumber(lawCode.name, articleNumber)?.toDomain()
+    override suspend fun getArticle(lawCode: LawCode, articleNumber: String, supplementaryProvisionLabel: String?): Article? {
+        val entity = if (supplementaryProvisionLabel != null) {
+            articleDao.getByLawCodeAndArticleNumberAndSupplProvision(lawCode.name, articleNumber, supplementaryProvisionLabel)
+        } else {
+            articleDao.getByLawCodeAndArticleNumber(lawCode.name, articleNumber)
+        }
+        return entity?.toDomain()
     }
 
     override suspend fun getRelatedArticles(article: Article): List<Article> {
@@ -85,6 +90,13 @@ class LawRepositoryImpl @Inject constructor(
                 )
             }.toMap()
         }
+    }
+
+    override suspend fun searchArticles(query: String): Map<LawCode, List<Article>> {
+        if (query.isBlank()) return emptyMap()
+        return articleDao.search(query)
+            .mapNotNull { it.toDomain() }
+            .groupBy { it.lawCode }
     }
 
     suspend fun getLawCodesNeedingRefresh(): List<LawCode> {
