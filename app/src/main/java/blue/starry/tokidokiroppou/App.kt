@@ -152,8 +152,10 @@ fun App() {
         bottomBar = {
             NavigationBar {
                 TopLevelDestination.entries.forEach { destination ->
-                    val selected = rootRoute == destination.route ||
-                        (destination == TopLevelDestination.HOME && rootRoute is HomeRoute)
+                    val selected = when (destination) {
+                        TopLevelDestination.HOME -> rootRoute is HomeRoute
+                        else -> rootRoute == destination.route
+                    }
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
