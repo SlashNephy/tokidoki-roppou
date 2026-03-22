@@ -96,6 +96,22 @@ fun ArticleCard(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false },
                         ) {
+                            if (onBookmarkClick != null) {
+                                DropdownMenuItem(
+                                    text = { Text(if (isBookmarked) "保存済み" else "保存") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                            contentDescription = null,
+                                            tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onBookmarkClick()
+                                    },
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text("e-Gov 法令検索を開く") },
                                 onClick = {
@@ -109,30 +125,11 @@ fun ArticleCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = article.displayTitle(useHalfWidthParentheses),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (onBookmarkClick != null) {
-                        IconButton(
-                            onClick = onBookmarkClick,
-                            modifier = Modifier.size(24.dp),
-                        ) {
-                            Icon(
-                                imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = if (isBookmarked) "保存済み" else "保存",
-                                tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = article.displayTitle(useHalfWidthParentheses),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
