@@ -20,7 +20,7 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MediumFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -188,7 +188,7 @@ fun HomeScreen(
         }
 
         if (showRefreshFab) {
-            MediumFloatingActionButton(
+            FloatingActionButton(
                 onClick = { viewModel.loadRandomArticle() },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
