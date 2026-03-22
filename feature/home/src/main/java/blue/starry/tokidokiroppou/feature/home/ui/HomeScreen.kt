@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -54,6 +55,7 @@ fun HomeScreen(
     articleNumber: String? = null,
     supplementaryProvisionLabel: String? = null,
     showRefreshFab: Boolean = true,
+    onNavigateToSettings: (() -> Unit)? = null,
     viewModel: HomeScreenViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(Unit) {
@@ -160,6 +162,41 @@ fun HomeScreen(
                     state.lawMetadata?.let { metadata ->
                         Spacer(modifier = Modifier.height(4.dp))
                         DataSourceFooter(metadata = metadata)
+                    }
+                }
+            }
+
+            is HomeUiState.NoLawSelected -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "法令が選択されていません",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "設定画面で通知対象の法令を選択してください",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        if (onNavigateToSettings != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = onNavigateToSettings) {
+                                Text("設定を開く")
+                            }
+                        }
                     }
                 }
             }
