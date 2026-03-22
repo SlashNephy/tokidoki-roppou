@@ -1,7 +1,5 @@
 package blue.starry.tokidokiroppou.core.ui.component
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -43,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import blue.starry.tokidokiroppou.core.domain.model.AnnotatedArticleText
 import blue.starry.tokidokiroppou.core.domain.model.Article
+
+private const val EGOV_LAW_URL_BASE = "https://laws.e-gov.go.jp/law/"
 
 @Composable
 fun ArticleCard(
@@ -55,7 +55,7 @@ fun ArticleCard(
     modifier: Modifier = Modifier,
 ) {
     val linkColor = MaterialTheme.colorScheme.primary
-    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     var menuExpanded by remember { mutableStateOf(false) }
 
     Card(
@@ -84,7 +84,6 @@ fun ArticleCard(
                     Box {
                         IconButton(
                             onClick = { menuExpanded = true },
-                            modifier = Modifier.size(24.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
@@ -101,9 +100,7 @@ fun ArticleCard(
                                 text = { Text("e-Gov 法令検索を開く") },
                                 onClick = {
                                     menuExpanded = false
-                                    val url = "https://laws.e-gov.go.jp/law/${article.lawCode.lawId}"
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                    context.startActivity(intent)
+                                    uriHandler.openUri("$EGOV_LAW_URL_BASE${article.lawCode.lawId}")
                                 },
                             )
                         }
