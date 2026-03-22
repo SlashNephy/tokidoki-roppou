@@ -77,6 +77,7 @@ fun ArticleCard(
                         text = article.lawCode.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
                     )
 
                     // オーバーフローメニュー
