@@ -112,7 +112,7 @@ class ArticleNotificationSender @Inject constructor(
     }
 
     private fun createCopyIntent(article: Article, useHalfWidthParentheses: Boolean): PendingIntent {
-        val fullText = "${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
+        val fullText = "${article.lawCode.displayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
         val intent = Intent(context, CopyActionReceiver::class.java).apply {
             action = CopyActionReceiver.ACTION_COPY
             putExtra(CopyActionReceiver.EXTRA_TEXT, fullText)
