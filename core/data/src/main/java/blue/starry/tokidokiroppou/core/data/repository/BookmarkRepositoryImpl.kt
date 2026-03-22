@@ -67,17 +67,6 @@ class BookmarkRepositoryImpl @Inject constructor(
         articleNumber: String,
         supplementaryProvisionLabel: String?,
     ) {
-        val label = supplementaryProvisionLabel ?: ""
-        if (bookmarkDao.isBookmarked(lawCode.name, articleNumber, label)) {
-            bookmarkDao.delete(lawCode.name, articleNumber, label)
-        } else {
-            bookmarkDao.insert(
-                BookmarkEntity(
-                    lawCode = lawCode.name,
-                    articleNumber = articleNumber,
-                    supplementaryProvisionLabel = label,
-                ),
-            )
-        }
+        bookmarkDao.toggle(lawCode.name, articleNumber, supplementaryProvisionLabel ?: "")
     }
 }
