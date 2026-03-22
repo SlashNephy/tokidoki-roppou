@@ -3,9 +3,9 @@ package blue.starry.tokidokiroppou
 import android.content.Intent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -17,19 +17,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.util.Consumer
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
 import blue.starry.tokidokiroppou.core.data.notification.ArticleNotificationSender
 import blue.starry.tokidokiroppou.feature.collection.ui.CollectionRoute
 import blue.starry.tokidokiroppou.feature.collection.ui.CollectionScreen
@@ -41,10 +39,10 @@ import blue.starry.tokidokiroppou.feature.settings.ui.SettingsScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object SettingsRoute
+data object SettingsRoute : NavKey
 
 enum class TopLevelDestination(
-    val route: Any,
+    val route: NavKey,
     val icon: ImageVector,
     val label: String,
 ) {
@@ -71,7 +69,7 @@ fun App() {
     val context = LocalContext.current
     val activity = context as? androidx.activity.ComponentActivity
 
-    // コールドスタート: Intent から初期ルートを決定 (NavHost 構築前に読み取る)
+    // コールドスタート: Intent から初期ルートを決定 (バックスタック構築前に読み取る)
     val startRoute = remember {
         val intent = activity?.intent
         val lawCode = intent?.getStringExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
@@ -85,12 +83,9 @@ fun App() {
         }
     }
 
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
+    val backStack = rememberNavBackStack(startRoute)
 
     // ウォームスタート: アプリが既に起動中に通知をタップした場合
-    val currentNavController by rememberUpdatedState(navController)
     DisposableEffect(activity) {
         val listener = Consumer<Intent> { intent ->
             val lawCode = intent.getStringExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
@@ -99,17 +94,18 @@ fun App() {
                 ?: return@Consumer
             intent.removeExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
             intent.removeExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
-            currentNavController.navigate(HomeRoute(lawCode, articleNumber)) {
-                popUpTo(currentNavController.graph.findStartDestination().id) {
-                    inclusive = true
-                }
-            }
+            // バックスタックをクリアしてホーム画面に遷移
+            backStack.clear()
+            backStack.add(HomeRoute(lawCode, articleNumber))
         }
         activity?.addOnNewIntentListener(listener)
         onDispose {
             activity?.removeOnNewIntentListener(listener)
         }
     }
+
+    // 現在のルートを取得してタブ選択状態を判定
+    val currentRoute = backStack.lastOrNull()
 
     Scaffold(
         topBar = {
@@ -118,12 +114,9 @@ fun App() {
                 actions = {
                     IconButton(
                         onClick = {
-                            navController.navigate(SettingsRoute) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                            // 設定画面が既に表示中でなければ遷移
+                            if (currentRoute !is SettingsRoute) {
+                                backStack.add(SettingsRoute)
                             }
                         },
                     ) {
@@ -138,16 +131,15 @@ fun App() {
         bottomBar = {
             NavigationBar {
                 TopLevelDestination.entries.forEach { destination ->
-                    val selected = currentDestination?.hasRoute(destination.route::class) == true
+                    val selected = currentRoute == destination.route ||
+                        (destination == TopLevelDestination.HOME && currentRoute is HomeRoute)
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                            if (!selected) {
+                                // タブ切り替え: バックスタックをクリアして選択先に遷移
+                                backStack.clear()
+                                backStack.add(destination.route)
                             }
                         },
                         icon = {
@@ -162,39 +154,40 @@ fun App() {
             }
         },
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = startRoute,
+        NavDisplay(
+            backStack = backStack,
+            onBack = { backStack.removeLastOrNull() },
             modifier = Modifier.padding(innerPadding),
-        ) {
-            composable<HomeRoute> {
-                HomeScreen()
-            }
-            composable<LawsRoute> {
-                LawsScreen(
-                    onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
-                        navController.navigate(HomeRoute(lawCode.name, articleNumber, supplementaryProvisionLabel)) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                inclusive = true
-                            }
-                        }
-                    },
-                )
-            }
-            composable<CollectionRoute> {
-                CollectionScreen(
-                    onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
-                        navController.navigate(HomeRoute(lawCode, articleNumber, supplementaryProvisionLabel)) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                inclusive = true
-                            }
-                        }
-                    },
-                )
-            }
-            composable<SettingsRoute> {
-                SettingsScreen()
-            }
-        }
+            entryDecorators = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
+            entryProvider = entryProvider {
+                entry<HomeRoute> {
+                    HomeScreen()
+                }
+                entry<LawsRoute> {
+                    LawsScreen(
+                        onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
+                            // 条文クリック: バックスタックをクリアしてホーム画面に遷移
+                            backStack.clear()
+                            backStack.add(HomeRoute(lawCode.name, articleNumber, supplementaryProvisionLabel))
+                        },
+                    )
+                }
+                entry<CollectionRoute> {
+                    CollectionScreen(
+                        onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
+                            // 条文クリック: バックスタックをクリアしてホーム画面に遷移
+                            backStack.clear()
+                            backStack.add(HomeRoute(lawCode, articleNumber, supplementaryProvisionLabel))
+                        },
+                    )
+                }
+                entry<SettingsRoute> {
+                    SettingsScreen()
+                }
+            },
+        )
     }
 }
