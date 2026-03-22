@@ -1,5 +1,6 @@
 package blue.starry.tokidokiroppou.feature.collection.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -84,6 +85,15 @@ fun CollectionScreen(
                     ArticleCard(
                         article = article,
                         useHalfWidthParentheses = state.useHalfWidthParentheses,
+                        isBookmarked = true,
+                        onBookmarkClick = { viewModel.removeBookmark(article) },
+                        modifier = Modifier.clickable {
+                            onArticleClick(
+                                article.lawCode.name,
+                                article.articleNumber,
+                                article.supplementaryProvisionLabel,
+                            )
+                        },
                     )
                 }
             }
