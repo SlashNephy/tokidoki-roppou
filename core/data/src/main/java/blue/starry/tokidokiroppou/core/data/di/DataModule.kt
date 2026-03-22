@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.work.WorkManager
 import blue.starry.tokidokiroppou.core.data.db.AppDatabase
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
@@ -44,6 +46,22 @@ abstract class DataBindsModule {
 @Module
 @InstallIn(SingletonComponent::class)
 object DataProvidesModule {
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS bookmarks (
+                    lawCode TEXT NOT NULL,
+                    articleNumber TEXT NOT NULL,
+                    supplementaryProvisionLabel TEXT NOT NULL DEFAULT '',
+                    bookmarkedAt INTEGER NOT NULL,
+                    PRIMARY KEY(lawCode, articleNumber, supplementaryProvisionLabel)
+                )
+                """,
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -53,7 +71,8 @@ object DataProvidesModule {
             context,
             AppDatabase::class.java,
             "tokidoki_roppou.db",
-        ).fallbackToDestructiveMigration()
+        ).addMigrations(MIGRATION_7_8)
+            .fallbackToDestructiveMigration()
             .build()
     }
 
