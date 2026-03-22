@@ -1,6 +1,9 @@
 package blue.starry.tokidokiroppou.core.ui.component
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,8 +26,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -44,6 +55,8 @@ fun ArticleCard(
     modifier: Modifier = Modifier,
 ) {
     val linkColor = MaterialTheme.colorScheme.primary
+    val context = LocalContext.current
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -56,14 +69,44 @@ fun ArticleCard(
                 modifier = Modifier.padding(20.dp),
             ) {
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         text = article.lawCode.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
+
+                    // オーバーフローメニュー
+                    Box {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "メニュー",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("e-Gov 法令検索を開く") },
+                                onClick = {
+                                    menuExpanded = false
+                                    val url = "https://laws.e-gov.go.jp/law/${article.lawCode.lawId}"
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(intent)
+                                },
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
