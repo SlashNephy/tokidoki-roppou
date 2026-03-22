@@ -1,9 +1,7 @@
 package blue.starry.tokidokiroppou.feature.home.ui
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
@@ -23,7 +21,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
     private val lawRepository: LawRepository,
     private val settingsRepository: ApplicationSettingsRepository,
     private val bookmarkRepository: BookmarkRepository,
@@ -56,10 +53,9 @@ class HomeScreenViewModel @Inject constructor(
         }
     }
 
-    init {
-        val route = savedStateHandle.toRoute<HomeRoute>()
-        if (route.lawCode != null && route.articleNumber != null) {
-            loadSpecificArticle(route.lawCode, route.articleNumber, route.supplementaryProvisionLabel)
+    fun loadArticle(lawCode: String?, articleNumber: String?, supplementaryProvisionLabel: String?) {
+        if (lawCode != null && articleNumber != null) {
+            loadSpecificArticle(lawCode, articleNumber, supplementaryProvisionLabel)
         } else {
             loadRandomArticle()
         }

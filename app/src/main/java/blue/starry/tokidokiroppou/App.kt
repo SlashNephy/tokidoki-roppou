@@ -171,8 +171,14 @@ fun App() {
                 rememberViewModelStoreNavEntryDecorator(),
             ),
             entryProvider = entryProvider {
-                entry<HomeRoute> {
-                    HomeScreen()
+                entry<HomeRoute> { route ->
+                    val isDetailMode = backStack.size > 1
+                    HomeScreen(
+                        lawCode = route.lawCode,
+                        articleNumber = route.articleNumber,
+                        supplementaryProvisionLabel = route.supplementaryProvisionLabel,
+                        showRefreshFab = !isDetailMode,
+                    )
                 }
                 entry<LawsRoute> {
                     LawsScreen(
