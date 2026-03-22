@@ -142,7 +142,6 @@ private fun LawsContent(
             item(key = "header_${category.name}") {
                 CategoryHeader(
                     category = category,
-                    lawCount = lawCodes.size,
                 )
             }
 
@@ -217,7 +216,6 @@ private fun LawsContent(
 @Composable
 private fun CategoryHeader(
     category: LawCategory,
-    lawCount: Int,
 ) {
     Row(
         modifier = Modifier
@@ -237,12 +235,6 @@ private fun CategoryHeader(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "${lawCount}件",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
