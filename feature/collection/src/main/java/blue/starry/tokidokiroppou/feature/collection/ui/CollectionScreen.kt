@@ -12,7 +12,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,6 +26,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.ui.component.ArticleCard
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CollectionScreen(
     onArticleClick: (lawCodeName: String, articleNumber: String, supplementaryProvisionLabel: String?) -> Unit = { _, _, _ -> },
@@ -38,7 +40,7 @@ fun CollectionScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                LoadingIndicator()
             }
         }
 

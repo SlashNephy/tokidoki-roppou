@@ -22,7 +22,8 @@ import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -130,7 +131,8 @@ private fun LawsContent(
                         .padding(32.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+                    LoadingIndicator(modifier = Modifier.size(24.dp))
                 }
             }
         }
@@ -304,9 +306,9 @@ private fun LawHeader(
             }
 
             if (isLoading) {
-                CircularProgressIndicator(
+                @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+                LoadingIndicator(
                     modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp,
                 )
             } else if (!isSearchMode) {
                 Icon(

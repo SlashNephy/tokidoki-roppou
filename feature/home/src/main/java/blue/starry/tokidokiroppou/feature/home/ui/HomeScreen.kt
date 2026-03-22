@@ -16,8 +16,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MediumFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,6 +46,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeScreen(
     lawCode: String? = null,
@@ -71,7 +73,7 @@ fun HomeScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        CircularProgressIndicator()
+                        LoadingIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "条文を取得中…",
@@ -185,7 +187,7 @@ fun HomeScreen(
         }
 
         if (showRefreshFab) {
-            FloatingActionButton(
+            MediumFloatingActionButton(
                 onClick = { viewModel.loadRandomArticle() },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
