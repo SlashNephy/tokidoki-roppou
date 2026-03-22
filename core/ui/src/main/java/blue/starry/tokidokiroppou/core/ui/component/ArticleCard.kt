@@ -1,6 +1,7 @@
 package blue.starry.tokidokiroppou.core.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,8 +25,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -32,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import blue.starry.tokidokiroppou.core.domain.model.AnnotatedArticleText
 import blue.starry.tokidokiroppou.core.domain.model.Article
+
+private const val EGOV_LAW_URL_BASE = "https://laws.e-gov.go.jp/law/"
 
 @Composable
 fun ArticleCard(
@@ -44,6 +56,8 @@ fun ArticleCard(
     modifier: Modifier = Modifier,
 ) {
     val linkColor = MaterialTheme.colorScheme.primary
+    val uriHandler = LocalUriHandler.current
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -56,42 +70,73 @@ fun ArticleCard(
                 modifier = Modifier.padding(20.dp),
             ) {
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         text = article.lawCode.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = article.displayTitle(useHalfWidthParentheses),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f),
                     )
-                    if (onBookmarkClick != null) {
+
+                    // オーバーフローメニュー
+                    Box {
                         IconButton(
-                            onClick = onBookmarkClick,
-                            modifier = Modifier.size(24.dp),
+                            onClick = { menuExpanded = true },
                         ) {
                             Icon(
-                                imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = if (isBookmarked) "保存済み" else "保存",
-                                tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "メニュー",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            if (onBookmarkClick != null) {
+                                DropdownMenuItem(
+                                    text = { Text(if (isBookmarked) "保存済み" else "保存") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                            contentDescription = null,
+                                            tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onBookmarkClick()
+                                    },
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text("e-Gov 法令検索を開く") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.OpenInBrowser,
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    uriHandler.openUri("$EGOV_LAW_URL_BASE${article.lawCode.lawId}")
+                                },
                             )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = article.displayTitle(useHalfWidthParentheses),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
