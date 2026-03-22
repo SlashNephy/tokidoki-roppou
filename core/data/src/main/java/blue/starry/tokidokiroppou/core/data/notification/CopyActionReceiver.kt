@@ -5,7 +5,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.widget.Toast
+import androidx.core.content.getSystemService
 import timber.log.Timber
 
 /**
@@ -21,12 +23,20 @@ class CopyActionReceiver : BroadcastReceiver() {
 
         val text = intent.getStringExtra(EXTRA_TEXT) ?: return
 
-        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clipboardManager = context.getSystemService<ClipboardManager>()
+        if (clipboardManager == null) {
+            Timber.w("ClipboardManager is not available")
+            return
+        }
+
         val clip = ClipData.newPlainText("条文", text)
         clipboardManager.setPrimaryClip(clip)
 
         Timber.d("条文をクリップボードにコピー")
-        Toast.makeText(context, "条文をコピーしました", Toast.LENGTH_SHORT).show()
+        // Android 13 以降ではシステムがコピー時の UI を表示するため Toast は不要
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Toast.makeText(context, "条文をコピーしました", Toast.LENGTH_SHORT).show()
+        }
     }
 
     companion object {

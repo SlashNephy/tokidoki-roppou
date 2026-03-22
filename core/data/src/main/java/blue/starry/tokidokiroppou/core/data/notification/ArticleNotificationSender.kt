@@ -120,7 +120,7 @@ class ArticleNotificationSender @Inject constructor(
 
         return PendingIntent.getBroadcast(
             context,
-            article.hashCode() xor 0x434F50,
+            article.hashCode() xor 0x434F50, // "COP" (Copy)
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -136,7 +136,7 @@ class ArticleNotificationSender @Inject constructor(
 
         return PendingIntent.getBroadcast(
             context,
-            article.hashCode() xor 0x424D4B,
+            article.hashCode() xor 0x424D4B, // "BMK" (Bookmark)
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
