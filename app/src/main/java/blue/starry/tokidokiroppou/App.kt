@@ -105,7 +105,9 @@ fun App() {
     }
 
     // 現在のルートを取得してタブ選択状態を判定
+    // スタックのルート (最初の要素) で判定することで、詳細画面遷移中も元タブをハイライト
     val currentRoute = backStack.lastOrNull()
+    val rootRoute = backStack.firstOrNull()
 
     Scaffold(
         topBar = {
@@ -131,8 +133,8 @@ fun App() {
         bottomBar = {
             NavigationBar {
                 TopLevelDestination.entries.forEach { destination ->
-                    val selected = currentRoute == destination.route ||
-                        (destination == TopLevelDestination.HOME && currentRoute is HomeRoute)
+                    val selected = rootRoute == destination.route ||
+                        (destination == TopLevelDestination.HOME && rootRoute is HomeRoute)
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -175,8 +177,7 @@ fun App() {
                 entry<LawsRoute> {
                     LawsScreen(
                         onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
-                            // 条文クリック: バックスタックをクリアしてホーム画面に遷移
-                            backStack.clear()
+                            // 条文クリック: 法令一覧をスタックに残して条文詳細画面に遷移
                             backStack.add(HomeRoute(lawCode.name, articleNumber, supplementaryProvisionLabel))
                         },
                     )
