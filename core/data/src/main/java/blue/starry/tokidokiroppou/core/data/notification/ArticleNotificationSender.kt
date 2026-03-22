@@ -134,15 +134,18 @@ class ArticleNotificationSender @Inject constructor(
 
     private fun createShareIntent(article: Article, useHalfWidthParentheses: Boolean): PendingIntent {
         val fullText = "${article.lawCode.displayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
-        val intent = Intent(context, ShareActionReceiver::class.java).apply {
-            action = ShareActionReceiver.ACTION_SHARE
-            putExtra(ShareActionReceiver.EXTRA_TEXT, fullText)
+        // Android 12+ では BroadcastReceiver から Activity を起動する trampoline パターンが
+        // ブロックされるため、PendingIntent.getActivity() で直接 Sharesheet を起動する
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, fullText)
         }
+        val chooserIntent = Intent.createChooser(sendIntent, null)
 
-        return PendingIntent.getBroadcast(
+        return PendingIntent.getActivity(
             context,
             article.hashCode() xor 0x534852, // "SHR" (Share)
-            intent,
+            chooserIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }

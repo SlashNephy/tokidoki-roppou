@@ -28,10 +28,6 @@
             android:exported="false" />
 
         <receiver
-            android:name="blue.starry.tokidokiroppou.core.data.notification.ShareActionReceiver"
-            android:exported="false" />
-
-        <receiver
             android:name="blue.starry.tokidokiroppou.core.data.notification.BookmarkActionReceiver"
             android:exported="false" />
 
