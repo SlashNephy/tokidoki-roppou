@@ -10,6 +10,7 @@ enum class LawCategory(val displayName: String) {
     COMMERCIAL_RELATED("商法関連"),
     ADMINISTRATIVE_SCRIVENER("行政書士業務関連"),
     INFORMATION("情報関連法"),
+    OTHERS("その他"),
 }
 
 @Serializable
@@ -168,5 +169,12 @@ enum class LawCode(
         lawId = "414AC0000000153",
         displayName = "電子署名等に係る地方公共団体情報システム機構の認証業務に関する法律",
         category = LawCategory.INFORMATION,
+    ),
+
+    // その他
+    ROAD_TRAFFIC_LAW(
+        lawId = "335AC0000000105",
+        displayName = "道路交通法",
+        category = LawCategory.OTHERS,
     ),
 }
