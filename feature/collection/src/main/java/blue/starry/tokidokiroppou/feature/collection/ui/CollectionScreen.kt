@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package blue.starry.tokidokiroppou.feature.collection.ui
 
 import androidx.compose.foundation.clickable
@@ -26,7 +28,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.ui.component.ArticleCard
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CollectionScreen(
     onArticleClick: (lawCodeName: String, articleNumber: String, supplementaryProvisionLabel: String?) -> Unit = { _, _, _ -> },

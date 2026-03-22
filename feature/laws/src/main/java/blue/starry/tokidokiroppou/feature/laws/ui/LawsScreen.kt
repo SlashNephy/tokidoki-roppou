@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package blue.starry.tokidokiroppou.feature.laws.ui
 
 import androidx.compose.foundation.clickable
@@ -131,7 +133,6 @@ private fun LawsContent(
                         .padding(32.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
                     LoadingIndicator(modifier = Modifier.size(24.dp))
                 }
             }

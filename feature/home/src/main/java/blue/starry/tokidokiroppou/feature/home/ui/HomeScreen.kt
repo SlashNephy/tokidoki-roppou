@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package blue.starry.tokidokiroppou.feature.home.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +48,6 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeScreen(
     lawCode: String? = null,

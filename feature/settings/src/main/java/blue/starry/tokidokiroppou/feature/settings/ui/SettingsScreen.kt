@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package blue.starry.tokidokiroppou.feature.settings.ui
 
 import androidx.compose.foundation.clickable
@@ -40,7 +42,6 @@ import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 import blue.starry.tokidokiroppou.core.ui.component.SettingItem
 import blue.starry.tokidokiroppou.core.ui.component.SettingSection
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsScreenViewModel = hiltViewModel(),
@@ -72,7 +73,6 @@ fun SettingsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SettingsContent(
     settings: ApplicationSettings,

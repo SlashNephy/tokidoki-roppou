@@ -3,6 +3,7 @@ agp = "9.1.0"
 kotlin = "2.3.20"
 ksp = "2.3.6"
 compose-bom = "2026.03.00"
+compose-material3 = "1.5.0-alpha15"
 hilt = "2.59.2"
 ktor = "3.4.1"
 kotlinx-serialization = "1.10.0"
@@ -38,7 +39,7 @@ compose-ui = { group = "androidx.compose.ui", name = "ui" }
 compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.5.0-alpha15" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "compose-material3" }
 compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
