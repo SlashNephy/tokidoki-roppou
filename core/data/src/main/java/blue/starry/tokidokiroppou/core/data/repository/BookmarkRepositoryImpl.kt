@@ -19,22 +19,8 @@ class BookmarkRepositoryImpl @Inject constructor(
 ) : BookmarkRepository {
 
     override fun observeAll(): Flow<List<Article>> {
-        return bookmarkDao.observeAll().map { bookmarks ->
-            bookmarks.mapNotNull { bookmark ->
-                val entity = if (bookmark.supplementaryProvisionLabel.isNotEmpty()) {
-                    articleDao.getByLawCodeAndArticleNumberAndSupplProvision(
-                        bookmark.lawCode,
-                        bookmark.articleNumber,
-                        bookmark.supplementaryProvisionLabel,
-                    )
-                } else {
-                    articleDao.getByLawCodeAndArticleNumber(
-                        bookmark.lawCode,
-                        bookmark.articleNumber,
-                    )
-                }
-                entity?.toDomain()
-            }
+        return articleDao.observeBookmarkedArticles().map { entities ->
+            entities.mapNotNull { it.toDomain() }
         }
     }
 
