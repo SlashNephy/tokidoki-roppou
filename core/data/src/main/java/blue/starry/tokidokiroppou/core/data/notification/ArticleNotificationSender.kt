@@ -56,6 +56,7 @@ class ArticleNotificationSender @Inject constructor(
 
         val contentIntent = createContentIntent(article)
 
+        val copyIntent = createCopyIntent(article, useHalfWidthParentheses)
         val bookmarkIntent = createBookmarkIntent(article)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -69,6 +70,11 @@ class ArticleNotificationSender @Inject constructor(
                     .setSummaryText(article.lawCode.displayName)
             )
             .setContentIntent(contentIntent)
+            .addAction(
+                R.drawable.ic_notification,
+                "コピー",
+                copyIntent,
+            )
             .addAction(
                 R.drawable.ic_notification,
                 "保存",
@@ -105,6 +111,21 @@ class ArticleNotificationSender @Inject constructor(
         )
     }
 
+    private fun createCopyIntent(article: Article, useHalfWidthParentheses: Boolean): PendingIntent {
+        val fullText = "${article.lawCode.displayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
+        val intent = Intent(context, CopyActionReceiver::class.java).apply {
+            action = CopyActionReceiver.ACTION_COPY
+            putExtra(CopyActionReceiver.EXTRA_TEXT, fullText)
+        }
+
+        return PendingIntent.getBroadcast(
+            context,
+            article.hashCode() xor 0x434F50, // "COP" (Copy)
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
     private fun createBookmarkIntent(article: Article): PendingIntent {
         val intent = Intent(context, BookmarkActionReceiver::class.java).apply {
             action = BookmarkActionReceiver.ACTION_BOOKMARK
@@ -115,7 +136,7 @@ class ArticleNotificationSender @Inject constructor(
 
         return PendingIntent.getBroadcast(
             context,
-            article.hashCode() xor 0x424D4B,
+            article.hashCode() xor 0x424D4B, // "BMK" (Bookmark)
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
