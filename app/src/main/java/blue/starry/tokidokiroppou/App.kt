@@ -156,7 +156,13 @@ fun App() {
     ) { innerPadding ->
         NavDisplay(
             backStack = backStack,
-            onBack = { backStack.removeLastOrNull() },
+            onBack = {
+                if (backStack.size <= 1) {
+                    activity?.finish()
+                } else {
+                    backStack.removeLastOrNull()
+                }
+            },
             modifier = Modifier.padding(innerPadding),
             entryDecorators = listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
