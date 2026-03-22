@@ -23,6 +23,11 @@ class BookmarkActionReceiver : BroadcastReceiver() {
     lateinit var bookmarkDao: BookmarkDao
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != ACTION_BOOKMARK) {
+            Timber.w("想定外の Intent action を受信: %s", intent.action)
+            return
+        }
+
         val lawCode = intent.getStringExtra(EXTRA_LAW_CODE) ?: return
         val articleNumber = intent.getStringExtra(EXTRA_ARTICLE_NUMBER) ?: return
         val supplementaryProvisionLabel = intent.getStringExtra(EXTRA_SUPPLEMENTARY_PROVISION_LABEL) ?: ""
