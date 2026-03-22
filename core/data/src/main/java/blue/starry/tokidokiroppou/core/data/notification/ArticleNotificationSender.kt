@@ -115,7 +115,7 @@ class ArticleNotificationSender @Inject constructor(
 
         return PendingIntent.getBroadcast(
             context,
-            article.hashCode() + 1,
+            article.hashCode() xor 0x424D4B,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
