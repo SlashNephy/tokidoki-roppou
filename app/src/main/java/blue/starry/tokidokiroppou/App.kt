@@ -198,6 +198,11 @@ fun App() {
                         articleNumber = route.articleNumber,
                         supplementaryProvisionLabel = route.supplementaryProvisionLabel,
                         showRefreshFab = !isDetailMode,
+                        onNavigateToSettings = {
+                            if (currentRoute !is SettingsRoute) {
+                                backStack.add(SettingsRoute)
+                            }
+                        },
                     )
                 }
                 entry<LawsRoute> {

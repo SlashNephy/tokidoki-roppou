@@ -5,7 +5,7 @@ import kotlin.time.Duration.Companion.hours
 
 data class ApplicationSettings(
     val notificationIntervalMinutes: Int = 60,
-    val enabledLawCodes: Set<LawCode> = LawCode.entries.filter { it.category == LawCategory.ROPPOU }.toSet(),
+    val enabledLawCodes: Set<LawCode> = DEFAULT_ENABLED_LAW_CODES,
     val isNotificationEnabled: Boolean = true,
     val useHalfWidthParentheses: Boolean = false,
     val excludeSupplementaryProvisions: Boolean = false,
@@ -14,6 +14,7 @@ data class ApplicationSettings(
         get() = notificationIntervalMinutes.toLong().let { Duration.parse("${it}m") }
 
     companion object {
+        val DEFAULT_ENABLED_LAW_CODES: Set<LawCode> = LawCode.entries.filter { it.category == LawCategory.ROPPOU }.toSet()
         val INTERVAL_OPTIONS = listOf(15, 30, 60, 120, 240, 480, 720, 1440)
 
         fun intervalDisplayText(minutes: Int): String = when {

@@ -66,6 +66,11 @@ class HomeScreenViewModel @Inject constructor(
             _uiState.value = HomeUiState.Loading
 
             val settings = settingsRepository.get()
+            if (settings.enabledLawCodes.isEmpty()) {
+                _uiState.value = HomeUiState.NoLawSelected
+                return@launch
+            }
+
             val article = lawRepository.getRandomArticle(settings.enabledLawCodes, settings.excludeSupplementaryProvisions)
 
             if (article != null) {
@@ -105,5 +110,6 @@ sealed interface HomeUiState {
         val lawMetadata: LawMetadata?,
         val useHalfWidthParentheses: Boolean,
     ) : HomeUiState
+    data object NoLawSelected : HomeUiState
     data class Error(val message: String) : HomeUiState
 }

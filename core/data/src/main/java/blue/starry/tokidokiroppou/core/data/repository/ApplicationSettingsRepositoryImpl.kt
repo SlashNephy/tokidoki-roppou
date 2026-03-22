@@ -45,7 +45,7 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
     override suspend fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean) {
         dataStore.edit { preferences ->
             val current = preferences[KEY_ENABLED_LAW_CODES]
-                ?: LawCode.entries.map { it.name }.toSet()
+                ?: ApplicationSettings.DEFAULT_ENABLED_LAW_CODES.map { it.name }.toSet()
             preferences[KEY_ENABLED_LAW_CODES] = if (enabled) {
                 current + lawCode.name
             } else {
@@ -72,7 +72,7 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
                 runCatching { LawCode.valueOf(name) }.getOrNull()
             }
             ?.toSet()
-            ?: LawCode.entries.toSet()
+            ?: ApplicationSettings.DEFAULT_ENABLED_LAW_CODES
 
         return ApplicationSettings(
             notificationIntervalMinutes = this[KEY_NOTIFICATION_INTERVAL] ?: 60,
