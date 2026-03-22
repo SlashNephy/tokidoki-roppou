@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package blue.starry.tokidokiroppou.feature.settings.ui
 
 import androidx.compose.foundation.clickable
@@ -12,7 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -53,7 +56,7 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            CircularProgressIndicator()
+            LoadingIndicator()
         }
     } else {
         SettingsContent(
@@ -235,9 +238,8 @@ private fun SettingsContent(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         if (isRefreshing) {
-                            CircularProgressIndicator(
+                            LoadingIndicator(
                                 modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
                             )
                             Text(
                                 text = "ダウンロード中…",
