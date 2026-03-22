@@ -8,11 +8,16 @@ import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
+import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,10 +26,35 @@ class HomeScreenViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val lawRepository: LawRepository,
     private val settingsRepository: ApplicationSettingsRepository,
+    private val bookmarkRepository: BookmarkRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val isBookmarked: StateFlow<Boolean> = _uiState.flatMapLatest { state ->
+        if (state is HomeUiState.Loaded) {
+            bookmarkRepository.observeIsBookmarked(
+                state.article.lawCode,
+                state.article.articleNumber,
+                state.article.supplementaryProvisionLabel,
+            )
+        } else {
+            flowOf(false)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun toggleBookmark() {
+        val state = _uiState.value as? HomeUiState.Loaded ?: return
+        viewModelScope.launch {
+            bookmarkRepository.toggle(
+                state.article.lawCode,
+                state.article.articleNumber,
+                state.article.supplementaryProvisionLabel,
+            )
+        }
+    }
 
     init {
         val route = savedStateHandle.toRoute<HomeRoute>()

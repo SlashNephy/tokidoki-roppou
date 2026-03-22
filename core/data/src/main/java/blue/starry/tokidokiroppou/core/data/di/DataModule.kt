@@ -6,13 +6,18 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.work.WorkManager
 import blue.starry.tokidokiroppou.core.data.db.AppDatabase
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
+import blue.starry.tokidokiroppou.core.data.db.BookmarkDao
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
 import blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImpl
+import blue.starry.tokidokiroppou.core.data.repository.BookmarkRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
+import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.Binds
 import dagger.Module
@@ -32,11 +37,31 @@ abstract class DataBindsModule {
     @Binds
     @Singleton
     abstract fun bindApplicationSettingsRepository(impl: ApplicationSettingsRepositoryImpl): ApplicationSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBookmarkRepository(impl: BookmarkRepositoryImpl): BookmarkRepository
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
 object DataProvidesModule {
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS bookmarks (
+                    lawCode TEXT NOT NULL,
+                    articleNumber TEXT NOT NULL,
+                    supplementaryProvisionLabel TEXT NOT NULL DEFAULT '',
+                    bookmarkedAt INTEGER NOT NULL,
+                    PRIMARY KEY(lawCode, articleNumber, supplementaryProvisionLabel)
+                )
+                """,
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -46,7 +71,8 @@ object DataProvidesModule {
             context,
             AppDatabase::class.java,
             "tokidoki_roppou.db",
-        ).fallbackToDestructiveMigration()
+        ).addMigrations(MIGRATION_7_8)
+            .fallbackToDestructiveMigration()
             .build()
     }
 
@@ -60,6 +86,12 @@ object DataProvidesModule {
     @Singleton
     fun provideLawMetadataDao(database: AppDatabase): LawMetadataDao {
         return database.lawMetadataDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideBookmarkDao(database: AppDatabase): BookmarkDao {
+        return database.bookmarkDao()
     }
 
     @Provides

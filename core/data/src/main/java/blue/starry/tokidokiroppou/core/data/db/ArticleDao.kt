@@ -34,6 +34,18 @@ interface ArticleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(articles: List<ArticleEntity>)
 
+    @Query(
+        """
+        SELECT A.* FROM articles A
+        INNER JOIN bookmarks B
+            ON A.lawCode = B.lawCode
+            AND A.articleNumber = B.articleNumber
+            AND COALESCE(A.supplementaryProvisionLabel, '') = B.supplementaryProvisionLabel
+        ORDER BY B.bookmarkedAt DESC
+        """
+    )
+    fun observeBookmarkedArticles(): kotlinx.coroutines.flow.Flow<List<ArticleEntity>>
+
     @Query("DELETE FROM articles")
     suspend fun deleteAll()
 

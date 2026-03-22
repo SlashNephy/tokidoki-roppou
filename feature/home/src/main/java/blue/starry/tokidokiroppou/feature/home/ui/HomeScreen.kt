@@ -49,6 +49,7 @@ fun HomeScreen(
     viewModel: HomeScreenViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -101,6 +102,8 @@ fun HomeScreen(
                                 scrollState.animateScrollTo(targetY)
                             }
                         },
+                        isBookmarked = isBookmarked,
+                        onBookmarkClick = { viewModel.toggleBookmark() },
                     )
 
                     state.lawMetadata?.let { metadata ->
