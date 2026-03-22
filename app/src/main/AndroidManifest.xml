@@ -24,6 +24,10 @@
         </activity>
 
         <receiver
+            android:name="blue.starry.tokidokiroppou.core.data.notification.CopyActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name="blue.starry.tokidokiroppou.core.data.notification.BookmarkActionReceiver"
             android:exported="false" />
 
