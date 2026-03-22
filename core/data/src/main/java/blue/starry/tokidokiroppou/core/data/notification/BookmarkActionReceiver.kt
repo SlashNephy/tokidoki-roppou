@@ -4,12 +4,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
-import blue.starry.tokidokiroppou.core.data.db.BookmarkDao
-import blue.starry.tokidokiroppou.core.data.db.BookmarkEntity
+import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -20,7 +21,7 @@ import javax.inject.Inject
 class BookmarkActionReceiver : BroadcastReceiver() {
 
     @Inject
-    lateinit var bookmarkDao: BookmarkDao
+    lateinit var bookmarkRepository: BookmarkRepository
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_BOOKMARK) {
@@ -35,15 +36,13 @@ class BookmarkActionReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                bookmarkDao.insert(
-                    BookmarkEntity(
-                        lawCode = lawCode,
-                        articleNumber = articleNumber,
-                        supplementaryProvisionLabel = supplementaryProvisionLabel,
-                    ),
+                bookmarkRepository.add(
+                    LawCode.valueOf(lawCode),
+                    articleNumber,
+                    supplementaryProvisionLabel.ifEmpty { null },
                 )
                 Timber.d("条文をブックマークに保存: %s %s", lawCode, articleNumber)
-                CoroutineScope(Dispatchers.Main).launch {
+                withContext(Dispatchers.Main) {
                     Toast.makeText(context, "条文を保存しました", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
