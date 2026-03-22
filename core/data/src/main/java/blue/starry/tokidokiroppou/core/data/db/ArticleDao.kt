@@ -22,7 +22,7 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber = :articleNumber AND supplementaryProvisionLabel = :supplementaryProvisionLabel LIMIT 1")
     suspend fun getByLawCodeAndArticleNumberAndSupplProvision(lawCode: String, articleNumber: String, supplementaryProvisionLabel: String): ArticleEntity?
 
-    @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber IN (:articleNumbers)")
+    @Query("SELECT * FROM articles WHERE lawCode = :lawCode AND articleNumber IN (:articleNumbers) AND supplementaryProvisionLabel IS NULL")
     suspend fun getByLawCodeAndArticleNumbers(lawCode: String, articleNumbers: List<String>): List<ArticleEntity>
 
     @Query("SELECT COUNT(*) FROM articles WHERE lawCode = :lawCode")

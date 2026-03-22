@@ -3,6 +3,7 @@ package blue.starry.tokidokiroppou
 import android.content.Intent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
@@ -105,25 +106,45 @@ fun App() {
     }
 
     // 現在のルートを取得してタブ選択状態を判定
+    // スタックのルート (最初の要素) で判定することで、詳細画面遷移中も元タブをハイライト
     val currentRoute = backStack.lastOrNull()
+    val rootRoute = backStack.firstOrNull()
+
+    val isDetailMode = backStack.size > 1
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ときどき六法") },
+                title = {
+                    if (!isDetailMode) {
+                        Text("ときどき六法")
+                    }
+                },
+                navigationIcon = {
+                    if (isDetailMode) {
+                        IconButton(onClick = { backStack.removeLastOrNull() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "戻る",
+                            )
+                        }
+                    }
+                },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            // 設定画面が既に表示中でなければ遷移
-                            if (currentRoute !is SettingsRoute) {
-                                backStack.add(SettingsRoute)
-                            }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "設定",
-                        )
+                    if (!isDetailMode) {
+                        IconButton(
+                            onClick = {
+                                // 設定画面が既に表示中でなければ遷移
+                                if (currentRoute !is SettingsRoute) {
+                                    backStack.add(SettingsRoute)
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "設定",
+                            )
+                        }
                     }
                 },
             )
@@ -131,8 +152,10 @@ fun App() {
         bottomBar = {
             NavigationBar {
                 TopLevelDestination.entries.forEach { destination ->
-                    val selected = currentRoute == destination.route ||
-                        (destination == TopLevelDestination.HOME && currentRoute is HomeRoute)
+                    val selected = when (destination) {
+                        TopLevelDestination.HOME -> rootRoute is HomeRoute
+                        else -> rootRoute == destination.route
+                    }
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -169,14 +192,18 @@ fun App() {
                 rememberViewModelStoreNavEntryDecorator(),
             ),
             entryProvider = entryProvider {
-                entry<HomeRoute> {
-                    HomeScreen()
+                entry<HomeRoute> { route ->
+                    HomeScreen(
+                        lawCode = route.lawCode,
+                        articleNumber = route.articleNumber,
+                        supplementaryProvisionLabel = route.supplementaryProvisionLabel,
+                        showRefreshFab = !isDetailMode,
+                    )
                 }
                 entry<LawsRoute> {
                     LawsScreen(
                         onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
-                            // 条文クリック: バックスタックをクリアしてホーム画面に遷移
-                            backStack.clear()
+                            // 条文クリック: 法令一覧をスタックに残して条文詳細画面に遷移
                             backStack.add(HomeRoute(lawCode.name, articleNumber, supplementaryProvisionLabel))
                         },
                     )

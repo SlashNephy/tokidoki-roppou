@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
@@ -46,8 +47,16 @@ import kotlin.math.roundToInt
 
 @Composable
 fun HomeScreen(
+    lawCode: String? = null,
+    articleNumber: String? = null,
+    supplementaryProvisionLabel: String? = null,
+    showRefreshFab: Boolean = true,
     viewModel: HomeScreenViewModel = hiltViewModel(),
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.loadArticle(lawCode, articleNumber, supplementaryProvisionLabel)
+    }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
 
@@ -175,16 +184,18 @@ fun HomeScreen(
             }
         }
 
-        FloatingActionButton(
-            onClick = { viewModel.loadRandomArticle() },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Refresh,
-                contentDescription = "別の条文を表示",
-            )
+        if (showRefreshFab) {
+            FloatingActionButton(
+                onClick = { viewModel.loadRandomArticle() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "別の条文を表示",
+                )
+            }
         }
     }
 }
