@@ -3,6 +3,7 @@ package blue.starry.tokidokiroppou
 import android.content.Intent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
@@ -109,23 +110,41 @@ fun App() {
     val currentRoute = backStack.lastOrNull()
     val rootRoute = backStack.firstOrNull()
 
+    val isDetailMode = backStack.size > 1
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ときどき六法") },
+                title = {
+                    if (!isDetailMode) {
+                        Text("ときどき六法")
+                    }
+                },
+                navigationIcon = {
+                    if (isDetailMode) {
+                        IconButton(onClick = { backStack.removeLastOrNull() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "戻る",
+                            )
+                        }
+                    }
+                },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            // 設定画面が既に表示中でなければ遷移
-                            if (currentRoute !is SettingsRoute) {
-                                backStack.add(SettingsRoute)
-                            }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "設定",
-                        )
+                    if (!isDetailMode) {
+                        IconButton(
+                            onClick = {
+                                // 設定画面が既に表示中でなければ遷移
+                                if (currentRoute !is SettingsRoute) {
+                                    backStack.add(SettingsRoute)
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "設定",
+                            )
+                        }
                     }
                 },
             )
@@ -172,7 +191,6 @@ fun App() {
             ),
             entryProvider = entryProvider {
                 entry<HomeRoute> { route ->
-                    val isDetailMode = backStack.size > 1
                     HomeScreen(
                         lawCode = route.lawCode,
                         articleNumber = route.articleNumber,
