@@ -6,33 +6,33 @@ import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class CollectionScreenViewModel @Inject constructor(
     private val bookmarkRepository: BookmarkRepository,
-    private val settingsRepository: ApplicationSettingsRepository,
+    settingsRepository: ApplicationSettingsRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<CollectionUiState>(CollectionUiState.Loading)
-    val uiState: StateFlow<CollectionUiState> = _uiState.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            val settings = settingsRepository.get()
-            bookmarkRepository.observeAll().collect { articles ->
-                _uiState.value = if (articles.isEmpty()) {
-                    CollectionUiState.Empty
-                } else {
-                    CollectionUiState.Loaded(articles, settings.useHalfWidthParentheses)
-                }
-            }
+    val uiState: StateFlow<CollectionUiState> = combine(
+        bookmarkRepository.observeAll(),
+        settingsRepository.observe(),
+    ) { articles, settings ->
+        if (articles.isEmpty()) {
+            CollectionUiState.Empty
+        } else {
+            CollectionUiState.Loaded(articles, settings.useHalfWidthParentheses)
         }
-    }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = CollectionUiState.Loading,
+    )
 
     fun removeBookmark(article: Article) {
         viewModelScope.launch {
