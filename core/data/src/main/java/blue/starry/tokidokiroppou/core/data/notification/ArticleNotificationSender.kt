@@ -117,8 +117,12 @@ class ArticleNotificationSender @Inject constructor(
         )
     }
 
+    private fun getArticleShareText(article: Article, useHalfWidthParentheses: Boolean): String {
+        return "${article.lawCode.displayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
+    }
+
     private fun createCopyIntent(article: Article, useHalfWidthParentheses: Boolean): PendingIntent {
-        val fullText = "${article.lawCode.displayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
+        val fullText = getArticleShareText(article, useHalfWidthParentheses)
         val intent = Intent(context, CopyActionReceiver::class.java).apply {
             action = CopyActionReceiver.ACTION_COPY
             putExtra(CopyActionReceiver.EXTRA_TEXT, fullText)
@@ -133,7 +137,7 @@ class ArticleNotificationSender @Inject constructor(
     }
 
     private fun createShareIntent(article: Article, useHalfWidthParentheses: Boolean): PendingIntent {
-        val fullText = "${article.lawCode.displayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
+        val fullText = getArticleShareText(article, useHalfWidthParentheses)
         // Android 12+ では BroadcastReceiver から Activity を起動する trampoline パターンが
         // ブロックされるため、PendingIntent.getActivity() で直接 Sharesheet を起動する
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
