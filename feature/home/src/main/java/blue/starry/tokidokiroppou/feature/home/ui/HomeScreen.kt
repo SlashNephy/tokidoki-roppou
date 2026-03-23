@@ -68,6 +68,12 @@ fun HomeScreen(
     val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
     val explanationSheetState by explanationViewModel.sheetState.collectAsStateWithLifecycle()
 
+    // 条文が変わったときに解説シートをリセット
+    val currentArticle = (uiState as? HomeUiState.Loaded)?.article
+    LaunchedEffect(currentArticle) {
+        explanationViewModel.dismissSheet()
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
             is HomeUiState.Loading -> {

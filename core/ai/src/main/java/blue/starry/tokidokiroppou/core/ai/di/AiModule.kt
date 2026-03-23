@@ -28,8 +28,6 @@ abstract class AiBindsModule {
     ): ArticleExplanationRepository
 }
 
-@Module
-@InstallIn(SingletonComponent::class)
 object AiConstants {
     const val MODEL_NAME = "gemini-3.1-flash-lite-preview"
 }
@@ -56,6 +54,7 @@ object AiProvidesModule {
         ).build()
 
     @Provides
+    @Singleton
     fun provideExplanationCacheDao(
         database: ExplanationCacheDatabase,
     ): ExplanationCacheDao = database.explanationCacheDao()

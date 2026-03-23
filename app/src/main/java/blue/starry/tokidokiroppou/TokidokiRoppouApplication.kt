@@ -47,7 +47,8 @@ class TokidokiRoppouApplication : Application(), Configuration.Provider {
         Firebase.initialize(this)
 
         // App Check の初期化 (API キーの不正利用を防止)
-        // staging フレーバーではデバッグプロバイダー、production では Play Integrity を使用
+        // local フレーバー (USE_DEBUG_APP_CHECK=true) ではデバッグプロバイダー、
+        // staging / production では Play Integrity を使用
         val appCheckFactory = if (BuildConfig.USE_DEBUG_APP_CHECK) {
             DebugAppCheckProviderFactory.getInstance()
         } else {
