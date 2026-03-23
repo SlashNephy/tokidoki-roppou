@@ -14,7 +14,11 @@
 </p>
 <!-- markdownlint-enable MD033 MD045 -->
 
-## テスト版の配布
+## ダウンロード
+
+[GitHub Releases](https://github.com/SlashNephy/tokidoki-roppou/releases/latest) から安定版の APK をダウンロードできます。
+
+### テスト版
 
 Firebase App Distribution でテスト版を配布しています。以下のリンクからテスターとして参加できます。
 
