@@ -10,7 +10,7 @@ on:
       - completed
   workflow_dispatch:
 
-permissions: { }
+permissions: {}
 
 jobs:
   firebase-app-distribution:
@@ -51,3 +51,8 @@ jobs:
         env:
           RELEASE_NOTES_FILE: ${{ github.workspace }}/release_notes.txt
           VERSION_CODE: ${{ github.run_number }}
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: staging-apk
+          path: app/build/outputs/apk/staging/release/*.apk
+          if-no-files-found: error

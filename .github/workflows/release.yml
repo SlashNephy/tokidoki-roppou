@@ -1,15 +1,77 @@
 name: Release
 
 on:
-  release:
-    types:
-      - created
-  workflow_dispatch:
+  push:
+    tags:
+      - v*
 
-permissions: { }
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
-  firebase-app-distribution:
+  build:
+    environment: release-production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+      - run: echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      - run: echo "$ANDROID_KEYSTORE" | base64 --decode > local.jks
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      - run: |
+          cat >> keystore.properties << EOF
+          android_keystore_path=$ANDROID_KEYSTORE_PATH
+          android_keystore_password=$ANDROID_KEYSTORE_PASSWORD
+          android_keystore_alias=$ANDROID_KEYSTORE_ALIAS
+          android_keystore_alias_password=$ANDROID_KEYSTORE_ALIAS_PASSWORD
+          EOF
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/local.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          ANDROID_KEYSTORE_ALIAS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_ALIAS_PASSWORD }}
+      - id: version
+        run: |
+          VERSION_NAME="${GITHUB_REF_NAME#v}"
+          echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
+      - run: ./gradlew assembleProductionRelease -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ github.run_number }}
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: production-apk
+          path: app/build/outputs/apk/production/release/*.apk
+          if-no-files-found: error
+
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: production-apk
+      - run: mv *.apk tokidoki-roppou-${GITHUB_REF_NAME}.apk
+      - uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        with:
+          generate_release_notes: true
+          files: tokidoki-roppou-*.apk
+
+  deploy-firebase:
+    needs: create-release
     environment: release-production
     runs-on: ubuntu-latest
     permissions:
@@ -44,14 +106,9 @@ jobs:
       - run: git log -1 --pretty=short > release_notes.txt
       - id: version
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            VERSION_NAME="${{ github.event.release.tag_name }}"
-            VERSION_NAME="${VERSION_NAME#v}"
-          else
-            VERSION_NAME="1.0.0"
-          fi
+          VERSION_NAME="${GITHUB_REF_NAME#v}"
           echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
-      - run: ./gradlew assembleProductionRelease appDistributionUploadProductionRelease --releaseNotesFile "$RELEASE_NOTES_FILE" -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+      - run: ./gradlew appDistributionUploadProductionRelease --releaseNotesFile "$RELEASE_NOTES_FILE" -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
         env:
           RELEASE_NOTES_FILE: ${{ github.workspace }}/release_notes.txt
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
