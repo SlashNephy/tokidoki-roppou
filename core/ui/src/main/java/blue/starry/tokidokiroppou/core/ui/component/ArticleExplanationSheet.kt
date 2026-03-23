@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.model.rememberMarkdownState
 
 /**
  * AI 解説のボトムシートの状態を表す。
@@ -122,18 +124,18 @@ fun ArticleExplanationSheet(
                         scrollState.animateScrollTo(scrollState.maxValue)
                     }
 
+                    // retainState = true でストリーミング中の再パース時にちらつきを防止
+                    val markdownState = rememberMarkdownState(
+                        content = uiState.text,
+                        retainState = true,
+                    )
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .verticalScroll(scrollState),
                     ) {
-                        Text(
-                            text = uiState.text,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                lineHeight = 24.sp,
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
+                        Markdown(markdownState)
                     }
                 }
 

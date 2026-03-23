@@ -20,6 +20,7 @@ room = "2.8.4"
 google-services = "4.4.4"
 firebase-appdistribution = "5.2.1"
 firebase-bom = "34.11.0"
+markdown-renderer = "0.39.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -60,6 +61,7 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
 firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
 firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
+markdown-renderer = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-m3", version.ref = "markdown-renderer" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
