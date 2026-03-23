@@ -176,12 +176,7 @@ fun ArticleExplanationSheet(
                         Markdown(
                             markdownState,
                             typography = markdownTypography(
-                                h1 = MaterialTheme.typography.titleMedium,
-                                h2 = MaterialTheme.typography.titleSmall,
-                                h3 = MaterialTheme.typography.labelLarge,
-                                h4 = MaterialTheme.typography.labelMedium,
-                                h5 = MaterialTheme.typography.labelSmall,
-                                h6 = MaterialTheme.typography.labelSmall,
+                                h1 = MaterialTheme.typography.titleMediumEmphasized,
                                 paragraph = MaterialTheme.typography.bodyMedium,
                             ),
                         )
