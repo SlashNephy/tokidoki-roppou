@@ -15,5 +15,8 @@ interface ArticleExplanationRepository {
      *
      * @return テキストの断片を逐次返す Flow。キャッシュヒット時は1チャンクで全文を返す。
      */
+    /** 使用中のモデル ID */
+    val modelName: String
+
     fun explainArticle(article: Article, forceRefresh: Boolean = false): Flow<String>
 }

@@ -8,12 +8,13 @@ import androidx.room.Entity
  */
 @Entity(
     tableName = "explanation_cache",
-    primaryKeys = ["lawCode", "articleNumber", "supplementaryProvisionLabel"],
+    primaryKeys = ["lawCode", "articleNumber", "supplementaryProvisionLabel", "modelName"],
 )
 data class ExplanationCacheEntity(
     val lawCode: String,
     val articleNumber: String,
     val supplementaryProvisionLabel: String,
+    val modelName: String,
     val explanation: String,
     val createdAt: Long,
 )

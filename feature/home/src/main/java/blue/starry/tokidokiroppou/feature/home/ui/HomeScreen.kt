@@ -245,6 +245,7 @@ fun HomeScreen(
         // AI 解説ボトムシート
         ArticleExplanationSheet(
             uiState = explanationSheetState,
+            modelName = explanationViewModel.modelName,
             onDismiss = { explanationViewModel.dismissSheet() },
             onRetry = { explanationViewModel.retry() },
             onRefresh = { explanationViewModel.refreshExplanation() },

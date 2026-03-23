@@ -30,12 +30,18 @@ abstract class AiBindsModule {
 
 @Module
 @InstallIn(SingletonComponent::class)
+object AiConstants {
+    const val MODEL_NAME = "gemini-3.1-flash-lite-preview"
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
 object AiProvidesModule {
     @Provides
     @Singleton
     fun provideGenerativeModel(): GenerativeModel =
         Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
-            modelName = "gemini-3.1-flash-lite-preview",
+            modelName = AiConstants.MODEL_NAME,
         )
 
     @Provides

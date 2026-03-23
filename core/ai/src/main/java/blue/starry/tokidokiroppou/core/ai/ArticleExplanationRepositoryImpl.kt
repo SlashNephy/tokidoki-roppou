@@ -1,6 +1,7 @@
 package blue.starry.tokidokiroppou.core.ai
 
 import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheDao
+import blue.starry.tokidokiroppou.core.ai.di.AiConstants
 import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheEntity
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import com.google.firebase.ai.GenerativeModel
@@ -15,6 +16,8 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
     private val cacheDao: ExplanationCacheDao,
 ) : ArticleExplanationRepository {
 
+    override val modelName: String = AiConstants.MODEL_NAME
+
     override fun explainArticle(article: Article, forceRefresh: Boolean): Flow<String> = flow {
         // キャッシュを確認 (7日間有効)
         if (!forceRefresh) {
@@ -22,6 +25,7 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
                 lawCode = article.lawCode.name,
                 articleNumber = article.articleNumber,
                 supplementaryProvisionLabel = article.supplementaryProvisionLabel ?: "",
+                modelName = modelName,
                 minTimestamp = System.currentTimeMillis() - CACHE_TTL_MS,
             )
             if (cached != null) {
@@ -47,6 +51,7 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
                     lawCode = article.lawCode.name,
                     articleNumber = article.articleNumber,
                     supplementaryProvisionLabel = article.supplementaryProvisionLabel ?: "",
+                    modelName = modelName,
                     explanation = accumulated.toString(),
                     createdAt = System.currentTimeMillis(),
                 ),

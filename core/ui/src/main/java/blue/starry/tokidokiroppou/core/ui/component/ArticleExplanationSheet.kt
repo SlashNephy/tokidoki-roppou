@@ -61,6 +61,7 @@ sealed interface ExplanationSheetState {
 @Composable
 fun ArticleExplanationSheet(
     uiState: ExplanationSheetState,
+    modelName: String = "",
     onDismiss: () -> Unit,
     onRetry: () -> Unit = {},
     onRefresh: () -> Unit = {},
@@ -86,11 +87,20 @@ fun ArticleExplanationSheet(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = "AI による解説",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
+                Column {
+                    Text(
+                        text = "AI による解説",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (modelName.isNotEmpty()) {
+                        Text(
+                            text = "($modelName)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
                 // ストリーミング完了後にリフレッシュボタンを表示
                 if (uiState is ExplanationSheetState.Streaming || uiState is ExplanationSheetState.Error) {
                     IconButton(

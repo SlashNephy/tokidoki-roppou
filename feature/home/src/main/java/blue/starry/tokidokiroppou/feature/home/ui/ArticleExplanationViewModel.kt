@@ -23,6 +23,8 @@ class ArticleExplanationViewModel @Inject constructor(
     private val _sheetState = MutableStateFlow<ExplanationSheetState>(ExplanationSheetState.Hidden)
     val sheetState: StateFlow<ExplanationSheetState> = _sheetState.asStateFlow()
 
+    val modelName: String = repository.modelName
+
     // 再試行用に最後にリクエストした条文を保持する
     private var lastArticle: Article? = null
     private var explanationJob: Job? = null

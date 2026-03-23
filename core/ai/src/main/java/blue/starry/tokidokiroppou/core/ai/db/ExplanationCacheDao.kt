@@ -11,6 +11,7 @@ interface ExplanationCacheDao {
         WHERE lawCode = :lawCode
           AND articleNumber = :articleNumber
           AND supplementaryProvisionLabel = :supplementaryProvisionLabel
+          AND modelName = :modelName
           AND createdAt > :minTimestamp
         LIMIT 1
     """)
@@ -18,6 +19,7 @@ interface ExplanationCacheDao {
         lawCode: String,
         articleNumber: String,
         supplementaryProvisionLabel: String,
+        modelName: String,
         minTimestamp: Long,
     ): ExplanationCacheEntity?
 
