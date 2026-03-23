@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.rememberMarkdownState
 
 /**
@@ -172,7 +173,18 @@ fun ArticleExplanationSheet(
                             .fillMaxWidth()
                             .verticalScroll(scrollState),
                     ) {
-                        Markdown(markdownState)
+                        Markdown(
+                            markdownState,
+                            typography = markdownTypography(
+                                h1 = MaterialTheme.typography.titleMedium,
+                                h2 = MaterialTheme.typography.titleSmall,
+                                h3 = MaterialTheme.typography.labelLarge,
+                                h4 = MaterialTheme.typography.labelMedium,
+                                h5 = MaterialTheme.typography.labelSmall,
+                                h6 = MaterialTheme.typography.labelSmall,
+                                paragraph = MaterialTheme.typography.bodyMedium,
+                            ),
+                        )
                     }
                 }
 
