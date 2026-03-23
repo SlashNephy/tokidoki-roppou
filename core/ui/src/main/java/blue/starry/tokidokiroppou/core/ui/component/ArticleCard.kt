@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.Card
@@ -53,6 +54,7 @@ fun ArticleCard(
     onReferenceClick: ((String) -> Unit)? = null,
     isBookmarked: Boolean = false,
     onBookmarkClick: (() -> Unit)? = null,
+    onExplainClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val linkColor = MaterialTheme.colorScheme.primary
@@ -110,6 +112,22 @@ fun ArticleCard(
                                     onClick = {
                                         menuExpanded = false
                                         onBookmarkClick()
+                                    },
+                                )
+                            }
+                            if (onExplainClick != null) {
+                                DropdownMenuItem(
+                                    text = { Text("AI で解説") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onExplainClick()
                                     },
                                 )
                             }
