@@ -1,5 +1,7 @@
 package blue.starry.tokidokiroppou.core.ai
 
+import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheDao
+import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheEntity
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import com.google.firebase.ai.GenerativeModel
 import kotlinx.coroutines.flow.Flow
@@ -10,15 +12,47 @@ import javax.inject.Singleton
 @Singleton
 class ArticleExplanationRepositoryImpl @Inject constructor(
     private val generativeModel: GenerativeModel,
+    private val cacheDao: ExplanationCacheDao,
 ) : ArticleExplanationRepository {
 
-    override fun explainArticle(article: Article): Flow<String> = flow {
-        val prompt = buildPrompt(article)
-        generativeModel.generateContentStream(prompt).collect { response ->
+    override fun explainArticle(article: Article, forceRefresh: Boolean): Flow<String> = flow {
+        // キャッシュを確認 (7日間有効)
+        if (!forceRefresh) {
+            val cached = cacheDao.get(
+                lawCode = article.lawCode.name,
+                articleNumber = article.articleNumber,
+                supplementaryProvisionLabel = article.supplementaryProvisionLabel ?: "",
+                minTimestamp = System.currentTimeMillis() - CACHE_TTL_MS,
+            )
+            if (cached != null) {
+                emit(cached.explanation)
+                return@flow
+            }
+        }
+
+        // キャッシュミスまたは強制リフレッシュ: API で生成
+        val accumulated = StringBuilder()
+        generativeModel.generateContentStream(buildPrompt(article)).collect { response ->
             val text = response.text
             if (text != null) {
+                accumulated.append(text)
                 emit(text)
             }
+        }
+
+        // 生成結果をキャッシュに保存
+        if (accumulated.isNotEmpty()) {
+            cacheDao.upsert(
+                ExplanationCacheEntity(
+                    lawCode = article.lawCode.name,
+                    articleNumber = article.articleNumber,
+                    supplementaryProvisionLabel = article.supplementaryProvisionLabel ?: "",
+                    explanation = accumulated.toString(),
+                    createdAt = System.currentTimeMillis(),
+                ),
+            )
+            // 期限切れのキャッシュを掃除
+            cacheDao.deleteExpired(System.currentTimeMillis() - CACHE_TTL_MS)
         }
     }
 
@@ -30,5 +64,10 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
         appendLine("【条文】")
         appendLine("${article.lawCode.displayName} ${article.displayTitle}")
         append(article.fullText)
+    }
+
+    companion object {
+        // キャッシュの有効期限: 7日間
+        private const val CACHE_TTL_MS = 7L * 24 * 60 * 60 * 1000
     }
 }

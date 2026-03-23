@@ -27,14 +27,14 @@ class ArticleExplanationViewModel @Inject constructor(
     private var lastArticle: Article? = null
     private var explanationJob: Job? = null
 
-    fun explainArticle(article: Article) {
+    fun explainArticle(article: Article, forceRefresh: Boolean = false) {
         lastArticle = article
         explanationJob?.cancel()
         explanationJob = viewModelScope.launch {
             _sheetState.value = ExplanationSheetState.Loading
             try {
                 val accumulated = StringBuilder()
-                repository.explainArticle(article).collect { chunk ->
+                repository.explainArticle(article, forceRefresh = forceRefresh).collect { chunk ->
                     accumulated.append(chunk)
                     _sheetState.value = ExplanationSheetState.Streaming(accumulated.toString())
                 }
@@ -53,6 +53,10 @@ class ArticleExplanationViewModel @Inject constructor(
 
     fun retry() {
         lastArticle?.let { explainArticle(it) }
+    }
+
+    fun refreshExplanation() {
+        lastArticle?.let { explainArticle(it, forceRefresh = true) }
     }
 
     fun dismissSheet() {

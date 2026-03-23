@@ -247,6 +247,7 @@ fun HomeScreen(
             uiState = explanationSheetState,
             onDismiss = { explanationViewModel.dismissSheet() },
             onRetry = { explanationViewModel.retry() },
+            onRefresh = { explanationViewModel.refreshExplanation() },
         )
     }
 }

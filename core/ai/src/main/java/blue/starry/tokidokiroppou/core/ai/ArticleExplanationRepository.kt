@@ -9,8 +9,11 @@ import kotlinx.coroutines.flow.Flow
  */
 interface ArticleExplanationRepository {
     /**
-     * 指定した条文の解説を生成し、テキストの断片を逐次返す。
-     * エラー時は Flow 内で例外をスローする。
+     * 指定した条文の解説を返す。
+     * キャッシュが有効な場合はキャッシュから即座に返し、
+     * [forceRefresh] が true の場合はキャッシュを無視して再生成する。
+     *
+     * @return テキストの断片を逐次返す Flow。キャッシュヒット時は1チャンクで全文を返す。
      */
-    fun explainArticle(article: Article): Flow<String>
+    fun explainArticle(article: Article, forceRefresh: Boolean = false): Flow<String>
 }

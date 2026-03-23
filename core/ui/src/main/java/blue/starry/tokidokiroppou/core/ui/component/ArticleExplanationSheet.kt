@@ -5,7 +5,9 @@ package blue.starry.tokidokiroppou.core.ui.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -13,7 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
@@ -57,6 +63,7 @@ fun ArticleExplanationSheet(
     uiState: ExplanationSheetState,
     onDismiss: () -> Unit,
     onRetry: () -> Unit = {},
+    onRefresh: () -> Unit = {},
 ) {
     if (uiState is ExplanationSheetState.Hidden) return
 
@@ -73,12 +80,32 @@ fun ArticleExplanationSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp),
         ) {
-            // タイトル
-            Text(
-                text = "AI による解説",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+            // タイトルとリフレッシュボタン
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "AI による解説",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                // ストリーミング完了後にリフレッシュボタンを表示
+                if (uiState is ExplanationSheetState.Streaming || uiState is ExplanationSheetState.Error) {
+                    IconButton(
+                        onClick = onRefresh,
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "再生成",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(4.dp))
 
