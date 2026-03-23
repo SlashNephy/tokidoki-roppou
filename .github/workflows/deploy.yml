@@ -55,3 +55,4 @@ jobs:
         with:
           name: staging-apk
           path: app/build/outputs/apk/staging/release/*.apk
+          if-no-files-found: error

@@ -58,6 +58,7 @@ jobs:
         with:
           name: production-apk
           path: app/build/outputs/apk/production/release/*.apk
+          if-no-files-found: error
 
   create-release:
     needs: build
