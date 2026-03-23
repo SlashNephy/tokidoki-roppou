@@ -43,6 +43,7 @@ import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.model.buildAnnotatedArticleText
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 import blue.starry.tokidokiroppou.core.ui.component.ArticleCard
+import blue.starry.tokidokiroppou.core.ui.component.ArticleExplanationSheet
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -57,6 +58,7 @@ fun HomeScreen(
     showRefreshFab: Boolean = true,
     onNavigateToSettings: (() -> Unit)? = null,
     viewModel: HomeScreenViewModel = hiltViewModel(),
+    explanationViewModel: ArticleExplanationViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(Unit) {
         viewModel.loadArticle(lawCode, articleNumber, supplementaryProvisionLabel)
@@ -64,6 +66,7 @@ fun HomeScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
+    val explanationSheetState by explanationViewModel.sheetState.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -118,6 +121,7 @@ fun HomeScreen(
                         },
                         isBookmarked = isBookmarked,
                         onBookmarkClick = { viewModel.toggleBookmark() },
+                        onExplainClick = { explanationViewModel.explainArticle(state.article) },
                     )
 
                     state.lawMetadata?.let { metadata ->
@@ -237,6 +241,13 @@ fun HomeScreen(
                 )
             }
         }
+
+        // AI 解説ボトムシート
+        ArticleExplanationSheet(
+            uiState = explanationSheetState,
+            onDismiss = { explanationViewModel.dismissSheet() },
+            onRetry = { explanationViewModel.retry() },
+        )
     }
 }
 
