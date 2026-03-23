@@ -8,20 +8,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -66,6 +67,7 @@ fun ArticleExplanationSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 200.dp)
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp),
         ) {
@@ -101,7 +103,7 @@ fun ArticleExplanationSheet(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
-                            LoadingIndicator()
+                            CircularProgressIndicator()
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 text = "解説を生成中…",
@@ -122,7 +124,7 @@ fun ArticleExplanationSheet(
 
                     Column(
                         modifier = Modifier
-                            .weight(1f, fill = false)
+                            .fillMaxWidth()
                             .verticalScroll(scrollState),
                     ) {
                         Text(

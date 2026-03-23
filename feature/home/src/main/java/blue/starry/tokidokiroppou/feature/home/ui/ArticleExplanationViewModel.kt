@@ -38,6 +38,10 @@ class ArticleExplanationViewModel @Inject constructor(
                     accumulated.append(chunk)
                     _sheetState.value = ExplanationSheetState.Streaming(accumulated.toString())
                 }
+                // ストリーミングが空のまま完了した場合
+                if (accumulated.isEmpty()) {
+                    _sheetState.value = ExplanationSheetState.Error("解説を取得できませんでした")
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
