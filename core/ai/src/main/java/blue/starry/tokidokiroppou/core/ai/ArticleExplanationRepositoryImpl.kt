@@ -2,20 +2,16 @@ package blue.starry.tokidokiroppou.core.ai
 
 import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheDao
 import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheEntity
-import blue.starry.tokidokiroppou.core.ai.di.Grounded
-import blue.starry.tokidokiroppou.core.ai.di.Plain
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import com.google.firebase.ai.GenerativeModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ArticleExplanationRepositoryImpl @Inject constructor(
-    @Grounded private val groundedModel: GenerativeModel,
-    @Plain private val plainModel: GenerativeModel,
+    private val generativeModel: GenerativeModel,
     private val cacheDao: ExplanationCacheDao,
 ) : ArticleExplanationRepository {
 
@@ -34,51 +30,30 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
             }
         }
 
-        // グラウンディング付きで生成を試みる
-        val prompt = buildPrompt(article)
-        var accumulated = generateWithModel(groundedModel, prompt)
-
-        // グラウンディング付きで空応答の場合、グラウンディングなしでフォールバック
-        if (accumulated.isEmpty()) {
-            Timber.w("Grounded model returned empty response, falling back to plain model")
-            accumulated = generateWithModel(plainModel, prompt)
-        }
-
-        // ストリーミング結果を emit
-        if (accumulated.isNotEmpty()) {
-            emit(accumulated)
-            saveToCache(article, accumulated)
-        }
-    }
-
-    /**
-     * 指定したモデルでストリーミング生成を実行し、全文を返す。
-     * エラー時は空文字列を返す。
-     */
-    private suspend fun generateWithModel(model: GenerativeModel, prompt: String): String {
-        return try {
-            val result = StringBuilder()
-            model.generateContentStream(prompt).collect { response ->
-                response.text?.let { result.append(it) }
+        // キャッシュミスまたは強制リフレッシュ: API で生成
+        val accumulated = StringBuilder()
+        generativeModel.generateContentStream(buildPrompt(article)).collect { response ->
+            val text = response.text
+            if (text != null) {
+                accumulated.append(text)
+                emit(text)
             }
-            result.toString()
-        } catch (e: Exception) {
-            Timber.w(e, "GenerativeModel failed")
-            ""
         }
-    }
 
-    private suspend fun saveToCache(article: Article, explanation: String) {
-        cacheDao.upsert(
-            ExplanationCacheEntity(
-                lawCode = article.lawCode.name,
-                articleNumber = article.articleNumber,
-                supplementaryProvisionLabel = article.supplementaryProvisionLabel ?: "",
-                explanation = explanation,
-                createdAt = System.currentTimeMillis(),
-            ),
-        )
-        cacheDao.deleteExpired(System.currentTimeMillis() - CACHE_TTL_MS)
+        // 生成結果をキャッシュに保存
+        if (accumulated.isNotEmpty()) {
+            cacheDao.upsert(
+                ExplanationCacheEntity(
+                    lawCode = article.lawCode.name,
+                    articleNumber = article.articleNumber,
+                    supplementaryProvisionLabel = article.supplementaryProvisionLabel ?: "",
+                    explanation = accumulated.toString(),
+                    createdAt = System.currentTimeMillis(),
+                ),
+            )
+            // 期限切れのキャッシュを掃除
+            cacheDao.deleteExpired(System.currentTimeMillis() - CACHE_TTL_MS)
+        }
     }
 
     private fun buildPrompt(article: Article): String = buildString {
