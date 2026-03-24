@@ -143,8 +143,12 @@ class LawsScreenViewModel @Inject constructor(
         for (item in content) {
             if (item is LawContentItem.Heading) {
                 val depth = item.heading.level.depth
-                // 折りたたみ中のスキップ判定: 同レベル以上の見出しが来たらスキップ解除
-                if (skipUntilLevel != null && depth <= skipUntilLevel) {
+                // 折りたたみ中: 下位レベルの見出しもスキップする
+                if (skipUntilLevel != null && depth > skipUntilLevel) {
+                    continue
+                }
+                // 同レベル以上の見出しが来たらスキップ解除
+                if (skipUntilLevel != null) {
                     skipUntilLevel = null
                 }
                 result.add(item)
