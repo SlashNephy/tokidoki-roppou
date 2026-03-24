@@ -8,9 +8,8 @@ import blue.starry.tokidokiroppou.core.data.worker.ArticleNotificationScheduler
 import blue.starry.tokidokiroppou.core.data.worker.CacheRefreshScheduler
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import com.google.firebase.Firebase
+import com.google.firebase.appcheck.AppCheckProviderFactory
 import com.google.firebase.appcheck.appCheck
-import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
-import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.initialize
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.runBlocking
@@ -33,6 +32,9 @@ class TokidokiRoppouApplication : Application(), Configuration.Provider {
     lateinit var cacheRefreshScheduler: CacheRefreshScheduler
 
     @Inject
+    lateinit var appCheckProviderFactory: AppCheckProviderFactory
+
+    @Inject
     lateinit var settingsRepository: ApplicationSettingsRepository
 
     override val workManagerConfiguration: Configuration
@@ -47,14 +49,8 @@ class TokidokiRoppouApplication : Application(), Configuration.Provider {
         Firebase.initialize(this)
 
         // App Check の初期化 (API キーの不正利用を防止)
-        // local フレーバー (USE_DEBUG_APP_CHECK=true) ではデバッグプロバイダー、
-        // staging / production では Play Integrity を使用
-        val appCheckFactory = if (BuildConfig.USE_DEBUG_APP_CHECK) {
-            DebugAppCheckProviderFactory.getInstance()
-        } else {
-            PlayIntegrityAppCheckProviderFactory.getInstance()
-        }
-        Firebase.appCheck.installAppCheckProviderFactory(appCheckFactory)
+        // フレーバーごとに DI で適切なプロバイダーが注入される
+        Firebase.appCheck.installAppCheckProviderFactory(appCheckProviderFactory)
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())

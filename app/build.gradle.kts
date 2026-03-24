@@ -42,16 +42,13 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".local"
             isDefault = true
-            buildConfigField("Boolean", "USE_DEBUG_APP_CHECK", "true")
         }
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".staging"
-            buildConfigField("Boolean", "USE_DEBUG_APP_CHECK", "false")
         }
         create("production") {
             dimension = "environment"
-            buildConfigField("Boolean", "USE_DEBUG_APP_CHECK", "false")
         }
     }
 
@@ -115,7 +112,6 @@ dependencies {
     implementation(libs.timber)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.appcheck.playintegrity)
-    debugImplementation(libs.firebase.appcheck.debug)
     "localImplementation"(libs.firebase.appcheck.debug)
     debugImplementation(libs.compose.ui.tooling)
 }
