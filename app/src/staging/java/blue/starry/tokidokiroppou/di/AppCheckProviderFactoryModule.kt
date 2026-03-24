@@ -1,0 +1,20 @@
+package blue.starry.tokidokiroppou.di
+
+import com.google.firebase.appcheck.AppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+// staging フレーバーでは Play Integrity を使用
+@Module
+@InstallIn(SingletonComponent::class)
+internal object AppCheckProviderFactoryModule {
+    @Provides
+    @Singleton
+    fun provide(): AppCheckProviderFactory {
+        return PlayIntegrityAppCheckProviderFactory.getInstance()
+    }
+}
