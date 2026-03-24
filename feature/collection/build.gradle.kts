@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
     implementation(project(":core:ui"))
+    implementation(project(":core:ai"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

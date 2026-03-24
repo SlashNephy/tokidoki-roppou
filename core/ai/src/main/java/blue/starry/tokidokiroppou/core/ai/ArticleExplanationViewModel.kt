@@ -1,4 +1,4 @@
-package blue.starry.tokidokiroppou.feature.home.ui
+package blue.starry.tokidokiroppou.core.ai
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

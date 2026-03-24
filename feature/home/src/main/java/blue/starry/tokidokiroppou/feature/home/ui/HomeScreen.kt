@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.model.buildAnnotatedArticleText
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
+import blue.starry.tokidokiroppou.core.ai.ArticleExplanationViewModel
 import blue.starry.tokidokiroppou.core.ui.component.ArticleCard
 import blue.starry.tokidokiroppou.core.ui.component.ArticleExplanationSheet
 import kotlinx.coroutines.launch
@@ -158,9 +159,15 @@ fun HomeScreen(
                         }
 
                         state.relatedArticles.forEach { related ->
+                            val relatedBookmarked by viewModel.observeIsBookmarked(related)
+                                .collectAsStateWithLifecycle(initialValue = false)
+
                             ArticleCard(
                                 article = related,
                                 useHalfWidthParentheses = state.useHalfWidthParentheses,
+                                isBookmarked = relatedBookmarked,
+                                onBookmarkClick = { viewModel.toggleBookmarkForArticle(related) },
+                                onExplainClick = { explanationViewModel.explainArticle(related) },
                                 modifier = Modifier.onGloballyPositioned { coordinates ->
                                     relatedCardPositions[related.articleNumber] =
                                         coordinates.positionInParent().y.roundToInt()

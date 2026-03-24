@@ -1,6 +1,7 @@
 plugins {
     id("tokidokiroppou.android.library")
     id("tokidokiroppou.hilt")
+    id("tokidokiroppou.compose")
 }
 
 android {
@@ -9,6 +10,7 @@ android {
 
 dependencies {
     implementation(project(":core:domain"))
+    implementation(project(":core:ui"))
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.ai)
@@ -16,5 +18,6 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.timber)
 }

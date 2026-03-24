@@ -26,14 +26,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import blue.starry.tokidokiroppou.core.ai.ArticleExplanationViewModel
 import blue.starry.tokidokiroppou.core.ui.component.ArticleCard
+import blue.starry.tokidokiroppou.core.ui.component.ArticleExplanationSheet
 
 @Composable
 fun CollectionScreen(
     onArticleClick: (lawCodeName: String, articleNumber: String, supplementaryProvisionLabel: String?) -> Unit = { _, _, _ -> },
     viewModel: CollectionScreenViewModel = hiltViewModel(),
+    explanationViewModel: ArticleExplanationViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val explanationSheetState by explanationViewModel.sheetState.collectAsStateWithLifecycle()
 
     when (val state = uiState) {
         is CollectionUiState.Loading -> {
@@ -90,6 +94,7 @@ fun CollectionScreen(
                         useHalfWidthParentheses = state.useHalfWidthParentheses,
                         isBookmarked = true,
                         onBookmarkClick = { viewModel.removeBookmark(article) },
+                        onExplainClick = { explanationViewModel.explainArticle(article) },
                         modifier = Modifier.clickable {
                             onArticleClick(
                                 article.lawCode.name,
@@ -102,4 +107,13 @@ fun CollectionScreen(
             }
         }
     }
+
+    // AI 解説ボトムシート
+    ArticleExplanationSheet(
+        uiState = explanationSheetState,
+        modelName = explanationViewModel.modelName,
+        onDismiss = { explanationViewModel.dismissSheet() },
+        onRetry = { explanationViewModel.retry() },
+        onRefresh = { explanationViewModel.refreshExplanation() },
+    )
 }

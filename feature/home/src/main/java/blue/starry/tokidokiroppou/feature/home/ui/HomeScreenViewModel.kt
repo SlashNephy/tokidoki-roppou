@@ -44,14 +44,24 @@ class HomeScreenViewModel @Inject constructor(
 
     fun toggleBookmark() {
         val state = _uiState.value as? HomeUiState.Loaded ?: return
+        toggleBookmarkForArticle(state.article)
+    }
+
+    fun toggleBookmarkForArticle(article: Article) {
         viewModelScope.launch {
             bookmarkRepository.toggle(
-                state.article.lawCode,
-                state.article.articleNumber,
-                state.article.supplementaryProvisionLabel,
+                article.lawCode,
+                article.articleNumber,
+                article.supplementaryProvisionLabel,
             )
         }
     }
+
+    fun observeIsBookmarked(article: Article) = bookmarkRepository.observeIsBookmarked(
+        article.lawCode,
+        article.articleNumber,
+        article.supplementaryProvisionLabel,
+    )
 
     fun loadArticle(lawCode: String?, articleNumber: String?, supplementaryProvisionLabel: String?) {
         if (lawCode != null && articleNumber != null) {
