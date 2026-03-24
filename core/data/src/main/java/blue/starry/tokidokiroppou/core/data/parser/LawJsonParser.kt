@@ -69,7 +69,7 @@ class LawJsonParser @Inject constructor() {
             parseArticle(node, lawCode, supplementaryProvisionLabel)?.let { article ->
                 val index = orderCounter[0]++
                 articles.add(article)
-                // 附則の条文は附則ラベル付きでキーを区別する
+                // 附則の条文はラベル付きでキーを区別する
                 val key = if (article.supplementaryProvisionLabel != null) {
                     "${article.supplementaryProvisionLabel}:${article.articleNumber}"
                 } else {
@@ -135,8 +135,9 @@ class LawJsonParser @Inject constructor() {
             )
         }
 
+        // 附則内の条文ラベル: AmendLawNum がなければ "附則" を設定してキー衝突を防ぐ
         val label = if (tag == "SupplProvision") {
-            node["attr"]?.jsonObject?.get("AmendLawNum")?.jsonPrimitive?.content
+            node["attr"]?.jsonObject?.get("AmendLawNum")?.jsonPrimitive?.content ?: "附則"
         } else {
             supplementaryProvisionLabel
         }

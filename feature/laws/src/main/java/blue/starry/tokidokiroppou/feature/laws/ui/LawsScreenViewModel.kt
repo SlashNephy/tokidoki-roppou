@@ -40,9 +40,9 @@ class LawsScreenViewModel @Inject constructor(
     private val _structuredContent = MutableStateFlow<Map<LawCode, List<LawContentItem>>>(emptyMap())
     val structuredContent: StateFlow<Map<LawCode, List<LawContentItem>>> = _structuredContent.asStateFlow()
 
-    /** 折りたたまれている見出しの orderIndex の集合 */
-    private val _collapsedHeadings = MutableStateFlow<Set<Int>>(emptySet())
-    val collapsedHeadings: StateFlow<Set<Int>> = _collapsedHeadings.asStateFlow()
+    /** 折りたたまれている見出しの orderIndex の集合（法令ごと） */
+    private val _collapsedHeadings = MutableStateFlow<Map<LawCode, Set<Int>>>(emptyMap())
+    val collapsedHeadings: StateFlow<Map<LawCode, Set<Int>>> = _collapsedHeadings.asStateFlow()
 
     private val _loadingLaw = MutableStateFlow<LawCode?>(null)
     val loadingLaw: StateFlow<LawCode?> = _loadingLaw.asStateFlow()
@@ -99,7 +99,7 @@ class LawsScreenViewModel @Inject constructor(
                 .filterIsInstance<LawContentItem.Heading>()
                 .map { it.orderIndex }
                 .toSet()
-            _collapsedHeadings.value = _collapsedHeadings.value + headingIndices
+            _collapsedHeadings.value = _collapsedHeadings.value + (lawCode to headingIndices)
             _loadingLaw.value = null
         }
     }
@@ -120,12 +120,11 @@ class LawsScreenViewModel @Inject constructor(
     }
 
     /** 見出しの折りたたみ状態をトグルする */
-    fun toggleHeading(orderIndex: Int) {
-        _collapsedHeadings.value = if (orderIndex in _collapsedHeadings.value) {
-            _collapsedHeadings.value - orderIndex
-        } else {
-            _collapsedHeadings.value + orderIndex
-        }
+    fun toggleHeading(lawCode: LawCode, orderIndex: Int) {
+        val current = _collapsedHeadings.value
+        val existing = current[lawCode] ?: emptySet()
+        val updated = if (orderIndex in existing) existing - orderIndex else existing + orderIndex
+        _collapsedHeadings.value = current + (lawCode to updated)
     }
 
     /**
@@ -134,7 +133,7 @@ class LawsScreenViewModel @Inject constructor(
      */
     fun getVisibleContent(lawCode: LawCode): List<LawContentItem> {
         val content = _structuredContent.value[lawCode] ?: return emptyList()
-        val collapsed = _collapsedHeadings.value
+        val collapsed = _collapsedHeadings.value[lawCode] ?: emptySet()
         if (collapsed.isEmpty()) return content
 
         val result = mutableListOf<LawContentItem>()

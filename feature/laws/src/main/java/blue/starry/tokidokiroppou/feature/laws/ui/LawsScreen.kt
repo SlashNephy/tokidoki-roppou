@@ -90,14 +90,14 @@ private fun LawsContent(
     useHalfWidth: Boolean,
     expandedLaw: LawCode?,
     structuredContent: Map<LawCode, List<LawContentItem>>,
-    collapsedHeadings: Set<Int>,
+    collapsedHeadings: Map<LawCode, Set<Int>>,
     loadingLaw: LawCode?,
     searchQuery: String,
     searchResults: Map<LawCode, List<Article>>?,
     isSearching: Boolean,
     onSearchQueryChanged: (String) -> Unit,
     onLawClick: (LawCode) -> Unit,
-    onHeadingClick: (Int) -> Unit,
+    onHeadingClick: (LawCode, Int) -> Unit,
     onArticleClick: (LawCode, String, String?) -> Unit,
     getFilteredLawCodes: (LawCategory) -> List<LawCode>,
     getArticleCount: (LawCode) -> Int?,
@@ -209,9 +209,9 @@ private fun LawsContent(
                                 StructureHeadingItem(
                                     heading = item.heading,
                                     useHalfWidth = useHalfWidth,
-                                    isCollapsed = item.orderIndex in collapsedHeadings,
+                                    isCollapsed = item.orderIndex in (collapsedHeadings[lawCode] ?: emptySet()),
                                     showDivider = showDivider,
-                                    onClick = { onHeadingClick(item.orderIndex) },
+                                    onClick = { onHeadingClick(lawCode, item.orderIndex) },
                                 )
                             }
                             is LawContentItem.ArticleItem -> {
