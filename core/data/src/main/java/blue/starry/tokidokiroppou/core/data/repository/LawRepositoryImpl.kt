@@ -4,13 +4,15 @@ import blue.starry.tokidokiroppou.core.data.api.EGovLawApiClient
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataEntity
+import blue.starry.tokidokiroppou.core.data.db.StructureHeadingDao
 import blue.starry.tokidokiroppou.core.data.db.toDomain
 import blue.starry.tokidokiroppou.core.data.db.toEntity
 import blue.starry.tokidokiroppou.core.data.parser.LawJsonParser
 import blue.starry.tokidokiroppou.core.domain.model.Article
-import blue.starry.tokidokiroppou.core.domain.model.extractArticleReferences
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
+import blue.starry.tokidokiroppou.core.domain.model.extractArticleReferences
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -24,6 +26,7 @@ class LawRepositoryImpl @Inject constructor(
     private val jsonParser: LawJsonParser,
     private val articleDao: ArticleDao,
     private val lawMetadataDao: LawMetadataDao,
+    private val structureHeadingDao: StructureHeadingDao,
 ) : LawRepository {
 
     override suspend fun getArticles(lawCode: LawCode): List<Article> {
@@ -33,6 +36,36 @@ class LawRepositoryImpl @Inject constructor(
         }
 
         return fetchAndCache(lawCode)
+    }
+
+    override suspend fun getStructuredContent(lawCode: LawCode): List<LawContentItem> {
+        // キャッシュ済みの条文と見出しを取得
+        val cachedArticles = articleDao.getByLawCode(lawCode.name).mapNotNull { entity ->
+            val article = entity.toDomain() ?: return@mapNotNull null
+            LawContentItem.ArticleItem(article, entity.orderIndex)
+        }
+        val cachedHeadings = structureHeadingDao.getByLawCode(lawCode.name).mapNotNull { entity ->
+            val heading = entity.toDomain() ?: return@mapNotNull null
+            LawContentItem.Heading(heading)
+        }
+
+        if (cachedArticles.isNotEmpty()) {
+            return (cachedArticles + cachedHeadings).sortedBy { it.orderIndex }
+        }
+
+        // キャッシュがなければ API から取得してキャッシュ
+        fetchAndCache(lawCode)
+
+        // キャッシュ後に再取得
+        val articles = articleDao.getByLawCode(lawCode.name).mapNotNull { entity ->
+            val article = entity.toDomain() ?: return@mapNotNull null
+            LawContentItem.ArticleItem(article, entity.orderIndex)
+        }
+        val headings = structureHeadingDao.getByLawCode(lawCode.name).mapNotNull { entity ->
+            val heading = entity.toDomain() ?: return@mapNotNull null
+            LawContentItem.Heading(heading)
+        }
+        return (articles + headings).sortedBy { it.orderIndex }
     }
 
     override suspend fun getRandomArticle(lawCodes: Set<LawCode>, excludeSupplementaryProvisions: Boolean): Article? {
@@ -121,8 +154,17 @@ class LawRepositoryImpl @Inject constructor(
             val result = jsonParser.parse(jsonString, lawCode)
             if (result.articles.isNotEmpty()) {
                 articleDao.deleteByLawCode(lawCode.name)
-                articleDao.insertAll(result.articles.map { it.toEntity() })
-                Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
+                structureHeadingDao.deleteByLawCode(lawCode.name)
+                articleDao.insertAll(result.articles.map { article ->
+                    val key = if (article.supplementaryProvisionLabel != null) {
+                        "${article.supplementaryProvisionLabel}:${article.articleNumber}"
+                    } else {
+                        article.articleNumber
+                    }
+                    article.toEntity(orderIndex = result.articleOrderIndices[key] ?: 0)
+                })
+                structureHeadingDao.insertAll(result.headings.map { it.toEntity() })
+                Timber.d("Cached %d articles and %d headings from %s", result.articles.size, result.headings.size, lawCode.displayName)
             }
             val revisionInfo = apiClient.getLawRevisionInfo(lawCode.lawId)
             if (revisionInfo != null) {
@@ -145,8 +187,9 @@ class LawRepositoryImpl @Inject constructor(
 
     suspend fun clearCache() {
         articleDao.deleteAll()
+        structureHeadingDao.deleteAll()
         lawMetadataDao.deleteAll()
-        Timber.d("Cleared all cached articles and metadata")
+        Timber.d("Cleared all cached articles, headings and metadata")
     }
 
     suspend fun isCacheAvailable(): Boolean {
@@ -163,8 +206,17 @@ class LawRepositoryImpl @Inject constructor(
             val result = jsonParser.parse(jsonString, lawCode)
             if (result.articles.isNotEmpty()) {
                 articleDao.deleteByLawCode(lawCode.name)
-                articleDao.insertAll(result.articles.map { it.toEntity() })
-                Timber.d("Cached %d articles from %s", result.articles.size, lawCode.displayName)
+                structureHeadingDao.deleteByLawCode(lawCode.name)
+                articleDao.insertAll(result.articles.map { article ->
+                    val key = if (article.supplementaryProvisionLabel != null) {
+                        "${article.supplementaryProvisionLabel}:${article.articleNumber}"
+                    } else {
+                        article.articleNumber
+                    }
+                    article.toEntity(orderIndex = result.articleOrderIndices[key] ?: 0)
+                })
+                structureHeadingDao.insertAll(result.headings.map { it.toEntity() })
+                Timber.d("Cached %d articles and %d headings from %s", result.articles.size, result.headings.size, lawCode.displayName)
             }
             val revisionInfo = apiClient.getLawRevisionInfo(lawCode.lawId)
             if (revisionInfo != null) {
