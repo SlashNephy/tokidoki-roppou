@@ -203,10 +203,9 @@ private fun LawsContent(
                     ) { index, item ->
                         when (item) {
                             is LawContentItem.Heading -> {
-                                // 次のアイテムが同レベル以上の見出しまたはリスト末尾なら区切り線を非表示
+                                // リスト末尾の見出しのみ区切り線を非表示
                                 val nextItem = visibleContent.getOrNull(index + 1)
-                                val showDivider = nextItem is LawContentItem.ArticleItem
-                                    || (nextItem is LawContentItem.Heading && nextItem.heading.level.depth > item.heading.level.depth)
+                                val showDivider = nextItem != null
                                 StructureHeadingItem(
                                     heading = item.heading,
                                     useHalfWidth = useHalfWidth,
