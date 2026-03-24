@@ -33,10 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownTypography
-import com.mikepenz.markdown.model.rememberMarkdownState
 
 /**
  * AI 解説のボトムシートの状態を表す。
@@ -162,11 +162,11 @@ fun ArticleExplanationSheet(
                         scrollState.animateScrollTo(scrollState.maxValue)
                     }
 
-                    // retainState = true でストリーミング中の再パース時にちらつきを防止
-                    val markdownState = rememberMarkdownState(
-                        content = uiState.text,
-                        retainState = true,
-                    )
+                    // CommonMark パーサーが CJK 句読点 (「」等) に隣接する ** を
+                    // 太字として認識しないため、** の直後・直前にゼロ幅スペースを挿入して回避する
+                    val normalizedText = remember(uiState.text) {
+                        uiState.text.replace(Regex("""\*\*\s*(.+?)\s*\*\*"""), "**\u200B$1\u200B**")
+                    }
 
                     Column(
                         modifier = Modifier
@@ -174,7 +174,7 @@ fun ArticleExplanationSheet(
                             .verticalScroll(scrollState),
                     ) {
                         Markdown(
-                            markdownState,
+                            normalizedText,
                             typography = markdownTypography(
                                 h1 = MaterialTheme.typography.titleMediumEmphasized,
                                 paragraph = MaterialTheme.typography.bodyMedium,
