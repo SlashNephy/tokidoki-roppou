@@ -94,6 +94,12 @@ class LawsScreenViewModel @Inject constructor(
             _loadingLaw.value = lawCode
             val content = lawRepository.getStructuredContent(lawCode)
             _structuredContent.value = _structuredContent.value + (lawCode to content)
+            // デフォルトで全見出しを折りたたみ状態にする
+            val headingIndices = content
+                .filterIsInstance<LawContentItem.Heading>()
+                .map { it.orderIndex }
+                .toSet()
+            _collapsedHeadings.value = _collapsedHeadings.value + headingIndices
             _loadingLaw.value = null
         }
     }
