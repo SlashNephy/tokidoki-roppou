@@ -13,7 +13,7 @@ private data class ParagraphJson(
     val text: String,
 )
 
-fun Article.toEntity(): ArticleEntity {
+fun Article.toEntity(orderIndex: Int = 0): ArticleEntity {
     val paragraphsJson = json.encodeToString(
         paragraphs.map { ParagraphJson(it.number, it.text) }
     )
@@ -24,6 +24,7 @@ fun Article.toEntity(): ArticleEntity {
         articleCaption = articleCaption,
         paragraphsJson = paragraphsJson,
         supplementaryProvisionLabel = supplementaryProvisionLabel,
+        orderIndex = orderIndex,
     )
 }
 

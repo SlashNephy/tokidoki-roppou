@@ -13,6 +13,7 @@ import blue.starry.tokidokiroppou.core.data.db.AppDatabase
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
 import blue.starry.tokidokiroppou.core.data.db.BookmarkDao
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
+import blue.starry.tokidokiroppou.core.data.db.StructureHeadingDao
 import blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.repository.BookmarkRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
@@ -62,6 +63,25 @@ object DataProvidesModule {
         }
     }
 
+    private val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 構造見出しテーブルの追加
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS structure_headings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    lawCode TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    level TEXT NOT NULL,
+                    orderIndex INTEGER NOT NULL
+                )
+                """,
+            )
+            // articles テーブルに orderIndex カラムを追加
+            db.execSQL("ALTER TABLE articles ADD COLUMN orderIndex INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -71,7 +91,7 @@ object DataProvidesModule {
             context,
             AppDatabase::class.java,
             "tokidoki_roppou.db",
-        ).addMigrations(MIGRATION_7_8)
+        ).addMigrations(MIGRATION_7_8, MIGRATION_8_9)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -92,6 +112,12 @@ object DataProvidesModule {
     @Singleton
     fun provideBookmarkDao(database: AppDatabase): BookmarkDao {
         return database.bookmarkDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideStructureHeadingDao(database: AppDatabase): StructureHeadingDao {
+        return database.structureHeadingDao()
     }
 
     @Provides
