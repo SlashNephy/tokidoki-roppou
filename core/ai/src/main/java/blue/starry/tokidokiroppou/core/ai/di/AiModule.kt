@@ -10,6 +10,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.ai.GenerativeModel
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.ai.type.generationConfig
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -40,6 +41,10 @@ object AiProvidesModule {
     fun provideGenerativeModel(): GenerativeModel =
         Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
             modelName = AiConstants.MODEL_NAME,
+            generationConfig = generationConfig {
+                temperature = 0.5f
+                maxOutputTokens = 2048
+            },
         )
 
     @Provides
