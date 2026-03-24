@@ -200,7 +200,7 @@ private fun LawsContent(
                     itemsIndexed(
                         items = visibleContent,
                         key = { _, item -> "${lawCode.name}_content_${item.orderIndex}" },
-                    ) { _, item ->
+                    ) { index, item ->
                         when (item) {
                             is LawContentItem.Heading -> {
                                 StructureHeadingItem(
@@ -211,9 +211,13 @@ private fun LawsContent(
                                 )
                             }
                             is LawContentItem.ArticleItem -> {
+                                // 次のアイテムが見出しまたはリスト末尾なら区切り線を非表示
+                                val nextItem = visibleContent.getOrNull(index + 1)
+                                val showDivider = nextItem is LawContentItem.ArticleItem
                                 ArticleListItem(
                                     article = item.article,
                                     useHalfWidth = useHalfWidth,
+                                    showDivider = showDivider,
                                     onClick = { onArticleClick(lawCode, item.article.articleNumber, item.article.supplementaryProvisionLabel) },
                                 )
                             }
@@ -405,6 +409,7 @@ private fun StructureHeadingItem(
 private fun ArticleListItem(
     article: Article,
     useHalfWidth: Boolean,
+    showDivider: Boolean = true,
     onClick: () -> Unit,
 ) {
     Row(
@@ -441,8 +446,10 @@ private fun ArticleListItem(
             }
         }
     }
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 32.dp),
-        color = MaterialTheme.colorScheme.outlineVariant,
-    )
+    if (showDivider) {
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 32.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
 }
