@@ -105,16 +105,25 @@ class LawJsonParser @Inject constructor() {
             }
         }
 
-        // 附則ノードの見出しを収集
+        // 附則ノードの見出しを収集（条文を持つ附則のみ）
         if (tag == "SupplProvision") {
+            if (!hasArticles(node)) return
+
+            val amendLawNum = node["attr"]?.jsonObject?.get("AmendLawNum")?.jsonPrimitive?.content
             val children = node["children"]?.jsonArray
-            val supplTitle = children?.firstOrNull { child ->
+            val supplLabel = children?.firstOrNull { child ->
                 child is JsonObject && child["tag"]?.jsonPrimitive?.content == "SupplProvisionLabel"
             }
-            val titleText = if (supplTitle is JsonObject) {
-                extractText(supplTitle)
+            val labelText = if (supplLabel is JsonObject) {
+                extractText(supplLabel)
             } else {
                 "附則"
+            }
+            // 改正法令番号がある場合は「法令番号 附則」形式にする
+            val titleText = if (amendLawNum != null) {
+                "$amendLawNum $labelText"
+            } else {
+                labelText
             }
             headings.add(
                 StructureHeading(
@@ -138,6 +147,42 @@ class LawJsonParser @Inject constructor() {
                 collectArticles(child, lawCode, articles, headings, articleOrderIndices, orderCounter, label)
             }
         }
+    }
+
+    /** ノード配下に有効な条文が含まれるかを再帰的にチェックする */
+    private fun hasArticles(node: JsonObject): Boolean {
+        val tag = node["tag"]?.jsonPrimitive?.content ?: return false
+        if (tag == "Article") {
+            return parseArticleMinimal(node)
+        }
+        val children = node["children"]?.jsonArray ?: return false
+        return children.any { child ->
+            child is JsonObject && hasArticles(child)
+        }
+    }
+
+    /** 条文ノードが有効（タイトル・段落あり、「削除」でない）かを簡易判定する */
+    private fun parseArticleMinimal(node: JsonObject): Boolean {
+        val children = node["children"]?.jsonArray ?: return false
+        var hasTitle = false
+        var hasValidParagraph = false
+        for (child in children) {
+            if (child !is JsonObject) continue
+            when (child["tag"]?.jsonPrimitive?.content) {
+                "ArticleTitle" -> hasTitle = extractText(child).isNotEmpty()
+                "Paragraph" -> {
+                    val text = extractSentenceText(
+                        child["children"]?.jsonArray?.firstOrNull {
+                            it is JsonObject && it["tag"]?.jsonPrimitive?.content == "ParagraphSentence"
+                        } as? JsonObject ?: continue
+                    )
+                    if (text.isNotEmpty() && text.trim() != "削除" && text.trim() != "略") {
+                        hasValidParagraph = true
+                    }
+                }
+            }
+        }
+        return hasTitle && hasValidParagraph
     }
 
     private fun parseArticle(node: JsonObject, lawCode: LawCode, supplementaryProvisionLabel: String? = null): Article? {
