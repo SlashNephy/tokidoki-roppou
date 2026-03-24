@@ -44,7 +44,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
+import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 
 @Composable
@@ -55,7 +57,7 @@ fun LawsScreen(
     val lawMetadata by viewModel.lawMetadata.collectAsStateWithLifecycle()
     val useHalfWidth by viewModel.useHalfWidthParentheses.collectAsStateWithLifecycle()
     val expandedLaw by viewModel.expandedLaw.collectAsStateWithLifecycle()
-    val articles by viewModel.articles.collectAsStateWithLifecycle()
+    val structuredContent by viewModel.structuredContent.collectAsStateWithLifecycle()
     val loadingLaw by viewModel.loadingLaw.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
@@ -65,7 +67,7 @@ fun LawsScreen(
         lawMetadata = lawMetadata,
         useHalfWidth = useHalfWidth,
         expandedLaw = expandedLaw,
-        articles = articles,
+        structuredContent = structuredContent,
         loadingLaw = loadingLaw,
         searchQuery = searchQuery,
         searchResults = searchResults,
@@ -74,6 +76,7 @@ fun LawsScreen(
         onLawClick = viewModel::toggleLaw,
         onArticleClick = onArticleClick,
         getFilteredLawCodes = viewModel::getFilteredLawCodes,
+        getArticleCount = viewModel::getArticleCount,
     )
 }
 
@@ -82,7 +85,7 @@ private fun LawsContent(
     lawMetadata: Map<LawCode, LawMetadata>,
     useHalfWidth: Boolean,
     expandedLaw: LawCode?,
-    articles: Map<LawCode, List<Article>>,
+    structuredContent: Map<LawCode, List<LawContentItem>>,
     loadingLaw: LawCode?,
     searchQuery: String,
     searchResults: Map<LawCode, List<Article>>?,
@@ -91,6 +94,7 @@ private fun LawsContent(
     onLawClick: (LawCode) -> Unit,
     onArticleClick: (LawCode, String, String?) -> Unit,
     getFilteredLawCodes: (LawCategory) -> List<LawCode>,
+    getArticleCount: (LawCode) -> Int?,
 ) {
     val isInSearchMode = searchQuery.isNotBlank()
 
@@ -151,7 +155,7 @@ private fun LawsContent(
             lawCodes.forEach { lawCode ->
                 val isExpanded = expandedLaw == lawCode
                 val metadata = lawMetadata[lawCode]
-                val lawArticles = articles[lawCode]
+                val lawContent = structuredContent[lawCode]
                 val isLoading = loadingLaw == lawCode
                 val matchedArticles = if (isInSearchMode) searchResults?.get(lawCode) else null
 
@@ -161,7 +165,7 @@ private fun LawsContent(
                         metadata = metadata,
                         useHalfWidth = useHalfWidth,
                         isExpanded = isExpanded,
-                        articleCount = lawArticles?.size,
+                        articleCount = getArticleCount(lawCode),
                         matchedCount = matchedArticles?.size,
                         isLoading = isLoading,
                         isSearchMode = isInSearchMode,
@@ -169,24 +173,41 @@ private fun LawsContent(
                     )
                 }
 
-                val displayArticles = if (isInSearchMode) {
-                    matchedArticles
-                } else if (isExpanded) {
-                    lawArticles
-                } else {
-                    null
-                }
-
-                if (displayArticles != null) {
+                // 検索モード: 検索結果の条文のみ表示（ヘッダーなし）
+                if (isInSearchMode && matchedArticles != null) {
                     itemsIndexed(
-                        items = displayArticles,
-                        key = { index, _ -> "${lawCode.name}_${index}" },
+                        items = matchedArticles,
+                        key = { index, _ -> "${lawCode.name}_search_${index}" },
                     ) { _, article ->
                         ArticleListItem(
                             article = article,
                             useHalfWidth = useHalfWidth,
                             onClick = { onArticleClick(lawCode, article.articleNumber, article.supplementaryProvisionLabel) },
                         )
+                    }
+                }
+
+                // 展開モード: 構造見出し + 条文をインターリーブ表示
+                if (!isInSearchMode && isExpanded && lawContent != null) {
+                    itemsIndexed(
+                        items = lawContent,
+                        key = { index, _ -> "${lawCode.name}_content_${index}" },
+                    ) { _, item ->
+                        when (item) {
+                            is LawContentItem.Heading -> {
+                                StructureHeadingItem(
+                                    heading = item.heading,
+                                    useHalfWidth = useHalfWidth,
+                                )
+                            }
+                            is LawContentItem.ArticleItem -> {
+                                ArticleListItem(
+                                    article = item.article,
+                                    useHalfWidth = useHalfWidth,
+                                    onClick = { onArticleClick(lawCode, item.article.articleNumber, item.article.supplementaryProvisionLabel) },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -320,6 +341,43 @@ private fun LawHeader(
             }
         }
     }
+}
+
+/** 構造見出し（編・章・節など）の表示コンポーネント */
+@Composable
+private fun StructureHeadingItem(
+    heading: StructureHeading,
+    useHalfWidth: Boolean,
+) {
+    val startPadding = 24.dp + (heading.level.depth * 8).dp
+    val title = if (useHalfWidth) heading.title.normalizeDisplay() else heading.title
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = startPadding, end = 16.dp, top = 12.dp, bottom = 4.dp),
+    ) {
+        Text(
+            text = title,
+            style = when (heading.level) {
+                StructureHeading.Level.Part,
+                StructureHeading.Level.SupplementaryProvision -> MaterialTheme.typography.titleSmall
+                StructureHeading.Level.Chapter -> MaterialTheme.typography.titleSmall
+                else -> MaterialTheme.typography.bodyMedium
+            },
+            fontWeight = when (heading.level) {
+                StructureHeading.Level.Part,
+                StructureHeading.Level.SupplementaryProvision -> FontWeight.Bold
+                StructureHeading.Level.Chapter -> FontWeight.SemiBold
+                else -> FontWeight.Medium
+            },
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+    HorizontalDivider(
+        modifier = Modifier.padding(start = startPadding, end = 16.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+    )
 }
 
 @Composable

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
@@ -34,8 +35,9 @@ class LawsScreenViewModel @Inject constructor(
     private val _expandedLaw = MutableStateFlow<LawCode?>(null)
     val expandedLaw: StateFlow<LawCode?> = _expandedLaw.asStateFlow()
 
-    private val _articles = MutableStateFlow<Map<LawCode, List<Article>>>(emptyMap())
-    val articles: StateFlow<Map<LawCode, List<Article>>> = _articles.asStateFlow()
+    /** 構造見出し付きの条文リスト（法令展開時に使用） */
+    private val _structuredContent = MutableStateFlow<Map<LawCode, List<LawContentItem>>>(emptyMap())
+    val structuredContent: StateFlow<Map<LawCode, List<LawContentItem>>> = _structuredContent.asStateFlow()
 
     private val _loadingLaw = MutableStateFlow<LawCode?>(null)
     val loadingLaw: StateFlow<LawCode?> = _loadingLaw.asStateFlow()
@@ -76,17 +78,17 @@ class LawsScreenViewModel @Inject constructor(
             _expandedLaw.value = null
         } else {
             _expandedLaw.value = lawCode
-            if (lawCode !in _articles.value) {
-                loadArticles(lawCode)
+            if (lawCode !in _structuredContent.value) {
+                loadStructuredContent(lawCode)
             }
         }
     }
 
-    private fun loadArticles(lawCode: LawCode) {
+    private fun loadStructuredContent(lawCode: LawCode) {
         viewModelScope.launch {
             _loadingLaw.value = lawCode
-            val result = lawRepository.getArticles(lawCode)
-            _articles.value = _articles.value + (lawCode to result)
+            val content = lawRepository.getStructuredContent(lawCode)
+            _structuredContent.value = _structuredContent.value + (lawCode to content)
             _loadingLaw.value = null
         }
     }
@@ -104,5 +106,11 @@ class LawsScreenViewModel @Inject constructor(
             lawCode.displayName.contains(query, ignoreCase = true)
                 || (results != null && lawCode in results)
         }
+    }
+
+    /** 展開中の法令の条文数を返す（見出しを除く） */
+    fun getArticleCount(lawCode: LawCode): Int? {
+        val content = _structuredContent.value[lawCode] ?: return null
+        return content.count { it is LawContentItem.ArticleItem }
     }
 }
