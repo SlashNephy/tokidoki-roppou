@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
     implementation(project(":core:ui"))
+    implementation(project(":core:ai"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -24,5 +25,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.timber)
     debugImplementation(libs.compose.ui.tooling)
 }

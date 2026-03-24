@@ -6,11 +6,15 @@
 
 <!-- markdownlint-disable MD033 MD045 -->
 <p align="center">
-  <img src="image/screenshot_home.png" alt="ホーム画面" width="19%" />
-  <img src="image/screenshot_list.png" alt="法令一覧画面" width="19%" />
-  <img src="image/screenshot_collection.png" alt="コレクション画面" width="19%" />
-  <img src="image/screenshot_settings.png" alt="設定画面" width="19%" />
-  <img src="image/screenshot_notifications.png" alt="通知" width="19%" />
+  <img src="image/screenshot_home.png" alt="ホーム画面" width="30%" />
+  <img src="image/screenshot_ai_explanation.png" alt="AI 解説" width="30%" />
+  <img src="image/screenshot_notifications.png" alt="通知" width="30%" />
+</p>
+
+<p align="center">
+  <img src="image/screenshot_list.png" alt="法令一覧画面" width="30%" />
+  <img src="image/screenshot_collection.png" alt="コレクション画面" width="30%" />
+  <img src="image/screenshot_settings.png" alt="設定画面" width="30%" />
 </p>
 <!-- markdownlint-enable MD033 MD045 -->
 
@@ -31,6 +35,7 @@ Firebase App Distribution でテスト版を配布しています。以下のリ
 - 表示中の条文から参照されている関連条文も併せて表示
 - 法令名・条文番号・条文内容で横断検索
 - 気になる条文をコレクションに保存
+- AI による条文解説 (Gemini API)
 - 全角かっこの半角化・漢数字の算用数字変換オプション
 - 法令データは [e-Gov 法令 API](https://laws.e-gov.go.jp/api/2/) からローカルに取得・キャッシュ
 
@@ -49,7 +54,8 @@ Firebase App Distribution でテスト版を配布しています。以下のリ
 ## 技術スタック
 
 - Kotlin / Jetpack Compose / Material 3
-- マルチモジュール構成 (app, core:domain, core:data, core:ui, feature:home, feature:laws, feature:collection, feature:settings)
+- マルチモジュール構成 (app, core:domain, core:data, core:ai, core:ui, feature:home, feature:laws, feature:collection, feature:settings)
 - Navigation 3、Hilt (DI)、Room (ローカルキャッシュ)、WorkManager (バックグラウンド通知・キャッシュ更新)、DataStore (設定)
+- Firebase AI Logic SDK (Gemini API による条文解説)
 - Ktor Client (e-Gov 法令 API)
 - GitHub Actions CI / Firebase App Distribution

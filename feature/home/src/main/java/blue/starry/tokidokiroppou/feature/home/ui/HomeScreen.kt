@@ -42,7 +42,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.model.buildAnnotatedArticleText
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
+import blue.starry.tokidokiroppou.core.ai.ArticleExplanationViewModel
 import blue.starry.tokidokiroppou.core.ui.component.ArticleCard
+import blue.starry.tokidokiroppou.core.ui.component.ArticleExplanationSheet
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -57,6 +59,7 @@ fun HomeScreen(
     showRefreshFab: Boolean = true,
     onNavigateToSettings: (() -> Unit)? = null,
     viewModel: HomeScreenViewModel = hiltViewModel(),
+    explanationViewModel: ArticleExplanationViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(Unit) {
         viewModel.loadArticle(lawCode, articleNumber, supplementaryProvisionLabel)
@@ -64,6 +67,13 @@ fun HomeScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
+    val explanationSheetState by explanationViewModel.sheetState.collectAsStateWithLifecycle()
+
+    // 条文が変わったときに解説シートをリセット
+    val currentArticle = (uiState as? HomeUiState.Loaded)?.article
+    LaunchedEffect(currentArticle) {
+        explanationViewModel.dismissSheet()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -118,6 +128,7 @@ fun HomeScreen(
                         },
                         isBookmarked = isBookmarked,
                         onBookmarkClick = { viewModel.toggleBookmark() },
+                        onExplainClick = { explanationViewModel.explainArticle(state.article) },
                     )
 
                     state.lawMetadata?.let { metadata ->
@@ -148,9 +159,15 @@ fun HomeScreen(
                         }
 
                         state.relatedArticles.forEach { related ->
+                            val relatedBookmarked by viewModel.observeIsBookmarked(related)
+                                .collectAsStateWithLifecycle(initialValue = false)
+
                             ArticleCard(
                                 article = related,
                                 useHalfWidthParentheses = state.useHalfWidthParentheses,
+                                isBookmarked = relatedBookmarked,
+                                onBookmarkClick = { viewModel.toggleBookmarkForArticle(related) },
+                                onExplainClick = { explanationViewModel.explainArticle(related) },
                                 modifier = Modifier.onGloballyPositioned { coordinates ->
                                     relatedCardPositions[related.articleNumber] =
                                         coordinates.positionInParent().y.roundToInt()
@@ -237,6 +254,15 @@ fun HomeScreen(
                 )
             }
         }
+
+        // AI 解説ボトムシート
+        ArticleExplanationSheet(
+            uiState = explanationSheetState,
+            modelName = explanationViewModel.modelName,
+            onDismiss = { explanationViewModel.dismissSheet() },
+            onRetry = { explanationViewModel.retry() },
+            onRefresh = { explanationViewModel.refreshExplanation() },
+        )
     }
 }
 

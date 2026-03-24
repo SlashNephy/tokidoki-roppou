@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package blue.starry.tokidokiroppou.core.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
@@ -9,21 +11,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.MenuGroupShapes
 import androidx.compose.material3.Text
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,12 +55,13 @@ private const val EGOV_LAW_URL_BASE = "https://laws.e-gov.go.jp/law/"
 @Composable
 fun ArticleCard(
     article: Article,
+    modifier: Modifier = Modifier,
     useHalfWidthParentheses: Boolean = false,
     annotatedArticleText: AnnotatedArticleText? = null,
     onReferenceClick: ((String) -> Unit)? = null,
     isBookmarked: Boolean = false,
     onBookmarkClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
+    onExplainClick: (() -> Unit)? = null,
 ) {
     val linkColor = MaterialTheme.colorScheme.primary
     val uriHandler = LocalUriHandler.current
@@ -93,39 +101,76 @@ fun ArticleCard(
                                 modifier = Modifier.size(20.dp),
                             )
                         }
-                        DropdownMenu(
+                        DropdownMenuPopup(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false },
                         ) {
-                            if (onBookmarkClick != null) {
+                            // アプリ内アクション (保存・AI 解説)
+                            if (onBookmarkClick != null || onExplainClick != null) {
+                                DropdownMenuGroup(
+                                    shapes = MenuGroupShapes(
+                                        shape = MaterialTheme.shapes.medium,
+                                        inactiveShape = MaterialTheme.shapes.medium,
+                                    ),
+                                ) {
+                                    if (onBookmarkClick != null) {
+                                        DropdownMenuItem(
+                                            text = { Text(if (isBookmarked) "保存済み" else "保存") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                                    contentDescription = null,
+                                                    tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            },
+                                            onClick = {
+                                                menuExpanded = false
+                                                onBookmarkClick()
+                                            },
+                                        )
+                                    }
+                                    if (onExplainClick != null) {
+                                        DropdownMenuItem(
+                                            text = { Text("AI で解説") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                )
+                                            },
+                                            onClick = {
+                                                menuExpanded = false
+                                                onExplainClick()
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(MenuDefaults.GroupSpacing))
+
+                            // 外部リンク
+                            DropdownMenuGroup(
+                                shapes = MenuGroupShapes(
+                                    shape = MaterialTheme.shapes.medium,
+                                    inactiveShape = MaterialTheme.shapes.medium,
+                                ),
+                            ) {
                                 DropdownMenuItem(
-                                    text = { Text(if (isBookmarked) "保存済み" else "保存") },
+                                    text = { Text("e-Gov 法令検索を開く") },
                                     leadingIcon = {
                                         Icon(
-                                            imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                            imageVector = Icons.Default.OpenInBrowser,
                                             contentDescription = null,
-                                            tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     },
                                     onClick = {
                                         menuExpanded = false
-                                        onBookmarkClick()
+                                        uriHandler.openUri("$EGOV_LAW_URL_BASE${article.lawCode.lawId}")
                                     },
                                 )
                             }
-                            DropdownMenuItem(
-                                text = { Text("e-Gov 法令検索を開く") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.OpenInBrowser,
-                                        contentDescription = null,
-                                    )
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    uriHandler.openUri("$EGOV_LAW_URL_BASE${article.lawCode.lawId}")
-                                },
-                            )
                         }
                     }
                 }
@@ -170,7 +215,7 @@ fun ArticleCard(
                     Text(
                         text = annotatedString,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            lineHeight = 24.sp,
+                            lineHeight = 28.sp,
                         ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
@@ -179,7 +224,7 @@ fun ArticleCard(
                     Text(
                         text = article.fullText(useHalfWidthParentheses),
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            lineHeight = 24.sp,
+                            lineHeight = 28.sp,
                         ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
