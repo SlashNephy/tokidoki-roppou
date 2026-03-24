@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownTypography
+import com.mikepenz.markdown.model.rememberMarkdownState
 
 /**
  * AI 解説のボトムシートの状態を表す。
@@ -168,13 +169,18 @@ fun ArticleExplanationSheet(
                         uiState.text.replace(Regex("""\*\*\s*(.+?)\s*\*\*"""), "**\u200B$1\u200B**")
                     }
 
+                    val markdownState = rememberMarkdownState(
+                        content = normalizedText,
+                        retainState = true,
+                    )
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .verticalScroll(scrollState),
                     ) {
                         Markdown(
-                            normalizedText,
+                            markdownState,
                             typography = markdownTypography(
                                 h1 = MaterialTheme.typography.titleMediumEmphasized,
                                 paragraph = MaterialTheme.typography.bodyMedium,
