@@ -203,10 +203,13 @@ private fun LawsContent(
                     ) { index, item ->
                         when (item) {
                             is LawContentItem.Heading -> {
+                                val nextItem = visibleContent.getOrNull(index + 1)
+                                val showDivider = nextItem != null
                                 StructureHeadingItem(
                                     heading = item.heading,
                                     useHalfWidth = useHalfWidth,
                                     isCollapsed = item.orderIndex in collapsedHeadings,
+                                    showDivider = showDivider,
                                     onClick = { onHeadingClick(item.orderIndex) },
                                 )
                             }
@@ -363,6 +366,7 @@ private fun StructureHeadingItem(
     heading: StructureHeading,
     useHalfWidth: Boolean,
     isCollapsed: Boolean,
+    showDivider: Boolean = true,
     onClick: () -> Unit,
 ) {
     val startPadding = 24.dp + (heading.level.depth * 8).dp
@@ -399,10 +403,12 @@ private fun StructureHeadingItem(
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
         )
     }
-    HorizontalDivider(
-        modifier = Modifier.padding(start = startPadding, end = 16.dp),
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-    )
+    if (showDivider) {
+        HorizontalDivider(
+            modifier = Modifier.padding(start = startPadding, end = 16.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+        )
+    }
 }
 
 @Composable
