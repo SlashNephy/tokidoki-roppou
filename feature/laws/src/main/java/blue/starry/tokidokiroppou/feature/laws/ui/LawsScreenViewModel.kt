@@ -7,6 +7,7 @@ import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
+import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,6 +39,10 @@ class LawsScreenViewModel @Inject constructor(
     /** 構造見出し付きの条文リスト（法令展開時に使用） */
     private val _structuredContent = MutableStateFlow<Map<LawCode, List<LawContentItem>>>(emptyMap())
     val structuredContent: StateFlow<Map<LawCode, List<LawContentItem>>> = _structuredContent.asStateFlow()
+
+    /** 折りたたまれている見出しの orderIndex の集合 */
+    private val _collapsedHeadings = MutableStateFlow<Set<Int>>(emptySet())
+    val collapsedHeadings: StateFlow<Set<Int>> = _collapsedHeadings.asStateFlow()
 
     private val _loadingLaw = MutableStateFlow<LawCode?>(null)
     val loadingLaw: StateFlow<LawCode?> = _loadingLaw.asStateFlow()
@@ -106,6 +111,48 @@ class LawsScreenViewModel @Inject constructor(
             lawCode.displayName.contains(query, ignoreCase = true)
                 || (results != null && lawCode in results)
         }
+    }
+
+    /** 見出しの折りたたみ状態をトグルする */
+    fun toggleHeading(orderIndex: Int) {
+        _collapsedHeadings.value = if (orderIndex in _collapsedHeadings.value) {
+            _collapsedHeadings.value - orderIndex
+        } else {
+            _collapsedHeadings.value + orderIndex
+        }
+    }
+
+    /**
+     * 折りたたみ状態を反映したコンテンツリストを返す。
+     * 折りたたまれた見出しの配下（同レベル以上の次の見出しまで）を非表示にする。
+     */
+    fun getVisibleContent(lawCode: LawCode): List<LawContentItem> {
+        val content = _structuredContent.value[lawCode] ?: return emptyList()
+        val collapsed = _collapsedHeadings.value
+        if (collapsed.isEmpty()) return content
+
+        val result = mutableListOf<LawContentItem>()
+        var skipUntilLevel: Int? = null
+
+        for (item in content) {
+            if (item is LawContentItem.Heading) {
+                val depth = item.heading.level.depth
+                // 折りたたみ中のスキップ判定: 同レベル以上の見出しが来たらスキップ解除
+                if (skipUntilLevel != null && depth <= skipUntilLevel) {
+                    skipUntilLevel = null
+                }
+                result.add(item)
+                // この見出し自体が折りたたまれていたら、配下をスキップ開始
+                if (item.orderIndex in collapsed) {
+                    skipUntilLevel = depth
+                }
+            } else {
+                if (skipUntilLevel == null) {
+                    result.add(item)
+                }
+            }
+        }
+        return result
     }
 
     /** 展開中の法令の条文数を返す（見出しを除く） */

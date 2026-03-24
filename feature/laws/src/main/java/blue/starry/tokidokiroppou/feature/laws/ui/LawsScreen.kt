@@ -58,6 +58,7 @@ fun LawsScreen(
     val useHalfWidth by viewModel.useHalfWidthParentheses.collectAsStateWithLifecycle()
     val expandedLaw by viewModel.expandedLaw.collectAsStateWithLifecycle()
     val structuredContent by viewModel.structuredContent.collectAsStateWithLifecycle()
+    val collapsedHeadings by viewModel.collapsedHeadings.collectAsStateWithLifecycle()
     val loadingLaw by viewModel.loadingLaw.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
@@ -68,15 +69,18 @@ fun LawsScreen(
         useHalfWidth = useHalfWidth,
         expandedLaw = expandedLaw,
         structuredContent = structuredContent,
+        collapsedHeadings = collapsedHeadings,
         loadingLaw = loadingLaw,
         searchQuery = searchQuery,
         searchResults = searchResults,
         isSearching = isSearching,
         onSearchQueryChanged = viewModel::updateSearchQuery,
         onLawClick = viewModel::toggleLaw,
+        onHeadingClick = viewModel::toggleHeading,
         onArticleClick = onArticleClick,
         getFilteredLawCodes = viewModel::getFilteredLawCodes,
         getArticleCount = viewModel::getArticleCount,
+        getVisibleContent = viewModel::getVisibleContent,
     )
 }
 
@@ -86,15 +90,18 @@ private fun LawsContent(
     useHalfWidth: Boolean,
     expandedLaw: LawCode?,
     structuredContent: Map<LawCode, List<LawContentItem>>,
+    collapsedHeadings: Set<Int>,
     loadingLaw: LawCode?,
     searchQuery: String,
     searchResults: Map<LawCode, List<Article>>?,
     isSearching: Boolean,
     onSearchQueryChanged: (String) -> Unit,
     onLawClick: (LawCode) -> Unit,
+    onHeadingClick: (Int) -> Unit,
     onArticleClick: (LawCode, String, String?) -> Unit,
     getFilteredLawCodes: (LawCategory) -> List<LawCode>,
     getArticleCount: (LawCode) -> Int?,
+    getVisibleContent: (LawCode) -> List<LawContentItem>,
 ) {
     val isInSearchMode = searchQuery.isNotBlank()
 
@@ -187,17 +194,20 @@ private fun LawsContent(
                     }
                 }
 
-                // 展開モード: 構造見出し + 条文をインターリーブ表示
+                // 展開モード: 構造見出し + 条文をインターリーブ表示（折りたたみ対応）
                 if (!isInSearchMode && isExpanded && lawContent != null) {
+                    val visibleContent = getVisibleContent(lawCode)
                     itemsIndexed(
-                        items = lawContent,
-                        key = { index, _ -> "${lawCode.name}_content_${index}" },
+                        items = visibleContent,
+                        key = { _, item -> "${lawCode.name}_content_${item.orderIndex}" },
                     ) { _, item ->
                         when (item) {
                             is LawContentItem.Heading -> {
                                 StructureHeadingItem(
                                     heading = item.heading,
                                     useHalfWidth = useHalfWidth,
+                                    isCollapsed = item.orderIndex in collapsedHeadings,
+                                    onClick = { onHeadingClick(item.orderIndex) },
                                 )
                             }
                             is LawContentItem.ArticleItem -> {
@@ -343,22 +353,27 @@ private fun LawHeader(
     }
 }
 
-/** 構造見出し（編・章・節など）の表示コンポーネント */
+/** 構造見出し（編・章・節など）の表示コンポーネント。タップで配下を折りたたみ可能。 */
 @Composable
 private fun StructureHeadingItem(
     heading: StructureHeading,
     useHalfWidth: Boolean,
+    isCollapsed: Boolean,
+    onClick: () -> Unit,
 ) {
     val startPadding = 24.dp + (heading.level.depth * 8).dp
     val title = if (useHalfWidth) heading.title.normalizeDisplay() else heading.title
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(start = startPadding, end = 16.dp, top = 12.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
+            modifier = Modifier.weight(1f),
             style = when (heading.level) {
                 StructureHeading.Level.Part,
                 StructureHeading.Level.SupplementaryProvision -> MaterialTheme.typography.titleSmall
@@ -372,6 +387,12 @@ private fun StructureHeadingItem(
                 else -> FontWeight.Medium
             },
             color = MaterialTheme.colorScheme.primary,
+        )
+        Icon(
+            imageVector = if (isCollapsed) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
+            contentDescription = if (isCollapsed) "展開" else "折りたたみ",
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
         )
     }
     HorizontalDivider(
