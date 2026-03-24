@@ -1,8 +1,8 @@
 package blue.starry.tokidokiroppou.core.ai
 
 import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheDao
-import blue.starry.tokidokiroppou.core.ai.di.AiConstants
 import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheEntity
+import blue.starry.tokidokiroppou.core.ai.di.AiConstants
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import com.google.firebase.ai.GenerativeModel
 import kotlinx.coroutines.flow.Flow
@@ -63,7 +63,7 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
 
     private fun buildPrompt(article: Article): String = buildString {
         appendLine("あなたは日本の法律に精通した専門家です。")
-        appendLine("次の【条文】について、一般の人にも理解できるよう「概要」「条文の意図・ポイント」「日常生活との関連性」のセクションごとにそれぞれ300文字程度で解説してください。")
+        appendLine("次の【条文】について、一般の人にも理解できるよう「概要」「条文の意図・ポイント」「日常生活との関連性」のセクションごとにそれぞれ250文字程度で解説してください。")
         appendLine("セクションの見出し (h1) とその内容のみが出力されるようにしてください。")
         appendLine("「日常生活との関連性」では具体例をあげ、仮想的な人物を用いて説明することも効果的です。")
         appendLine("テキストは Markdown 記法で出力し、重要な箇所には太字を使用してください。")
