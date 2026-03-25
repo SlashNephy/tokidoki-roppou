@@ -13,4 +13,5 @@ data class ArticleEntity(
     val articleCaption: String,
     val paragraphsJson: String,
     val supplementaryProvisionLabel: String? = null,
+    val orderIndex: Int = 0,
 )

@@ -2,6 +2,7 @@ package blue.starry.tokidokiroppou.core.data.parser
 
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -15,6 +16,12 @@ import javax.inject.Singleton
 
 data class LawParseResult(
     val articles: List<Article>,
+    val headings: List<StructureHeading>,
+    /**
+     * 条文に対応する orderIndex のマップ。
+     * キーは本文の条文なら articleNumber、附則の条文なら "${supplementaryProvisionLabel}:${articleNumber}" の形式。
+     */
+    val articleOrderIndices: Map<String, Int>,
 )
 
 @Singleton
@@ -22,30 +29,118 @@ class LawJsonParser @Inject constructor() {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    // 構造ノードのタグ名と対応する見出しタグ・レベルの対応表
+    private val structureTagMap = mapOf(
+        "Part" to ("PartTitle" to StructureHeading.Level.Part),
+        "Chapter" to ("ChapterTitle" to StructureHeading.Level.Chapter),
+        "Section" to ("SectionTitle" to StructureHeading.Level.Section),
+        "Subsection" to ("SubsectionTitle" to StructureHeading.Level.Subsection),
+        "Division" to ("DivisionTitle" to StructureHeading.Level.Division),
+    )
+
     fun parse(jsonString: String, lawCode: LawCode): LawParseResult {
         val root = json.parseToJsonElement(jsonString).jsonObject
-        val lawFullText = root["law_full_text"]?.jsonObject ?: return LawParseResult(emptyList())
+        val lawFullText = root["law_full_text"]?.jsonObject
+            ?: return LawParseResult(emptyList(), emptyList(), emptyMap())
 
         val articles = mutableListOf<Article>()
-        collectArticles(lawFullText, lawCode, articles)
-        return LawParseResult(articles = articles)
+        val headings = mutableListOf<StructureHeading>()
+        val articleOrderIndices = mutableMapOf<String, Int>()
+        val orderCounter = intArrayOf(0) // 可変カウンター
+
+        collectArticles(lawFullText, lawCode, articles, headings, articleOrderIndices, orderCounter)
+        return LawParseResult(
+            articles = articles,
+            headings = headings,
+            articleOrderIndices = articleOrderIndices,
+        )
     }
 
     private fun collectArticles(
         node: JsonObject,
         lawCode: LawCode,
         articles: MutableList<Article>,
+        headings: MutableList<StructureHeading>,
+        articleOrderIndices: MutableMap<String, Int>,
+        orderCounter: IntArray,
         supplementaryProvisionLabel: String? = null,
     ) {
         val tag = node["tag"]?.jsonPrimitive?.content ?: return
 
+        // 条文ノードの場合
         if (tag == "Article") {
-            parseArticle(node, lawCode, supplementaryProvisionLabel)?.let { articles.add(it) }
+            parseArticle(node, lawCode, supplementaryProvisionLabel)?.let { article ->
+                val index = orderCounter[0]++
+                articles.add(article)
+                // 附則の条文はラベル付きでキーを区別する
+                val key = if (article.supplementaryProvisionLabel != null) {
+                    "${article.supplementaryProvisionLabel}:${article.articleNumber}"
+                } else {
+                    article.articleNumber
+                }
+                articleOrderIndices[key] = index
+            }
             return
         }
 
+        // 構造ノード（Part, Chapter, Section 等）の場合、見出しを収集
+        val structureInfo = structureTagMap[tag]
+        if (structureInfo != null) {
+            val (titleTag, level) = structureInfo
+            val children = node["children"]?.jsonArray
+            if (children != null) {
+                for (child in children) {
+                    if (child is JsonObject && child["tag"]?.jsonPrimitive?.content == titleTag) {
+                        val titleText = extractText(child)
+                        if (titleText.isNotEmpty()) {
+                            headings.add(
+                                StructureHeading(
+                                    lawCode = lawCode,
+                                    title = titleText,
+                                    level = level,
+                                    orderIndex = orderCounter[0]++,
+                                )
+                            )
+                        }
+                        break
+                    }
+                }
+            }
+        }
+
+        // 附則ノードの見出しを収集（条文を持つ附則のみ）
+        if (tag == "SupplProvision") {
+            if (!hasArticles(node)) return
+
+            val amendLawNum = node["attr"]?.jsonObject?.get("AmendLawNum")?.jsonPrimitive?.content
+            val children = node["children"]?.jsonArray
+            val supplLabel = children?.firstOrNull { child ->
+                child is JsonObject && child["tag"]?.jsonPrimitive?.content == "SupplProvisionLabel"
+            }
+            val labelText = if (supplLabel is JsonObject) {
+                extractText(supplLabel)
+            } else {
+                "附則"
+            }
+            // 改正法令番号がある場合は「法令番号 附則」形式にする
+            val titleText = if (amendLawNum != null) {
+                "$amendLawNum $labelText"
+            } else {
+                labelText
+            }
+            headings.add(
+                StructureHeading(
+                    lawCode = lawCode,
+                    title = titleText,
+                    level = StructureHeading.Level.SupplementaryProvision,
+                    orderIndex = orderCounter[0]++,
+                )
+            )
+        }
+
+        // 附則内の条文ラベル: AmendLawNum がなければ "附則" を設定してキー衝突を防ぐ
         val label = if (tag == "SupplProvision") {
-            node["attr"]?.jsonObject?.get("AmendLawNum")?.jsonPrimitive?.content
+            node["attr"]?.jsonObject?.get("AmendLawNum")?.jsonPrimitive?.content ?: "附則"
         } else {
             supplementaryProvisionLabel
         }
@@ -53,9 +148,45 @@ class LawJsonParser @Inject constructor() {
         val children = node["children"]?.jsonArray ?: return
         for (child in children) {
             if (child is JsonObject) {
-                collectArticles(child, lawCode, articles, label)
+                collectArticles(child, lawCode, articles, headings, articleOrderIndices, orderCounter, label)
             }
         }
+    }
+
+    /** ノード配下に有効な条文が含まれるかを再帰的にチェックする */
+    private fun hasArticles(node: JsonObject): Boolean {
+        val tag = node["tag"]?.jsonPrimitive?.content ?: return false
+        if (tag == "Article") {
+            return parseArticleMinimal(node)
+        }
+        val children = node["children"]?.jsonArray ?: return false
+        return children.any { child ->
+            child is JsonObject && hasArticles(child)
+        }
+    }
+
+    /** 条文ノードが有効（タイトル・段落あり、「削除」でない）かを簡易判定する */
+    private fun parseArticleMinimal(node: JsonObject): Boolean {
+        val children = node["children"]?.jsonArray ?: return false
+        var hasTitle = false
+        var hasValidParagraph = false
+        for (child in children) {
+            if (child !is JsonObject) continue
+            when (child["tag"]?.jsonPrimitive?.content) {
+                "ArticleTitle" -> hasTitle = extractText(child).isNotEmpty()
+                "Paragraph" -> {
+                    val text = extractSentenceText(
+                        child["children"]?.jsonArray?.firstOrNull {
+                            it is JsonObject && it["tag"]?.jsonPrimitive?.content == "ParagraphSentence"
+                        } as? JsonObject ?: continue
+                    )
+                    if (text.isNotEmpty() && text.trim() != "削除" && text.trim() != "略") {
+                        hasValidParagraph = true
+                    }
+                }
+            }
+        }
+        return hasTitle && hasValidParagraph
     }
 
     private fun parseArticle(node: JsonObject, lawCode: LawCode, supplementaryProvisionLabel: String? = null): Article? {

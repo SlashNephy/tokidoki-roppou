@@ -44,7 +44,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
+import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 
 @Composable
@@ -55,7 +57,8 @@ fun LawsScreen(
     val lawMetadata by viewModel.lawMetadata.collectAsStateWithLifecycle()
     val useHalfWidth by viewModel.useHalfWidthParentheses.collectAsStateWithLifecycle()
     val expandedLaw by viewModel.expandedLaw.collectAsStateWithLifecycle()
-    val articles by viewModel.articles.collectAsStateWithLifecycle()
+    val structuredContent by viewModel.structuredContent.collectAsStateWithLifecycle()
+    val collapsedHeadings by viewModel.collapsedHeadings.collectAsStateWithLifecycle()
     val loadingLaw by viewModel.loadingLaw.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
@@ -65,15 +68,19 @@ fun LawsScreen(
         lawMetadata = lawMetadata,
         useHalfWidth = useHalfWidth,
         expandedLaw = expandedLaw,
-        articles = articles,
+        structuredContent = structuredContent,
+        collapsedHeadings = collapsedHeadings,
         loadingLaw = loadingLaw,
         searchQuery = searchQuery,
         searchResults = searchResults,
         isSearching = isSearching,
         onSearchQueryChanged = viewModel::updateSearchQuery,
         onLawClick = viewModel::toggleLaw,
+        onHeadingClick = viewModel::toggleHeading,
         onArticleClick = onArticleClick,
         getFilteredLawCodes = viewModel::getFilteredLawCodes,
+        getArticleCount = viewModel::getArticleCount,
+        getVisibleContent = viewModel::getVisibleContent,
     )
 }
 
@@ -82,15 +89,19 @@ private fun LawsContent(
     lawMetadata: Map<LawCode, LawMetadata>,
     useHalfWidth: Boolean,
     expandedLaw: LawCode?,
-    articles: Map<LawCode, List<Article>>,
+    structuredContent: Map<LawCode, List<LawContentItem>>,
+    collapsedHeadings: Map<LawCode, Set<Int>>,
     loadingLaw: LawCode?,
     searchQuery: String,
     searchResults: Map<LawCode, List<Article>>?,
     isSearching: Boolean,
     onSearchQueryChanged: (String) -> Unit,
     onLawClick: (LawCode) -> Unit,
+    onHeadingClick: (LawCode, Int) -> Unit,
     onArticleClick: (LawCode, String, String?) -> Unit,
     getFilteredLawCodes: (LawCategory) -> List<LawCode>,
+    getArticleCount: (LawCode) -> Int?,
+    getVisibleContent: (LawCode) -> List<LawContentItem>,
 ) {
     val isInSearchMode = searchQuery.isNotBlank()
 
@@ -151,7 +162,7 @@ private fun LawsContent(
             lawCodes.forEach { lawCode ->
                 val isExpanded = expandedLaw == lawCode
                 val metadata = lawMetadata[lawCode]
-                val lawArticles = articles[lawCode]
+                val lawContent = structuredContent[lawCode]
                 val isLoading = loadingLaw == lawCode
                 val matchedArticles = if (isInSearchMode) searchResults?.get(lawCode) else null
 
@@ -161,7 +172,7 @@ private fun LawsContent(
                         metadata = metadata,
                         useHalfWidth = useHalfWidth,
                         isExpanded = isExpanded,
-                        articleCount = lawArticles?.size,
+                        articleCount = getArticleCount(lawCode),
                         matchedCount = matchedArticles?.size,
                         isLoading = isLoading,
                         isSearchMode = isInSearchMode,
@@ -169,24 +180,52 @@ private fun LawsContent(
                     )
                 }
 
-                val displayArticles = if (isInSearchMode) {
-                    matchedArticles
-                } else if (isExpanded) {
-                    lawArticles
-                } else {
-                    null
-                }
-
-                if (displayArticles != null) {
+                // 検索モード: 検索結果の条文のみ表示（ヘッダーなし）
+                if (isInSearchMode && matchedArticles != null) {
                     itemsIndexed(
-                        items = displayArticles,
-                        key = { index, _ -> "${lawCode.name}_${index}" },
+                        items = matchedArticles,
+                        key = { index, _ -> "${lawCode.name}_search_${index}" },
                     ) { _, article ->
                         ArticleListItem(
                             article = article,
                             useHalfWidth = useHalfWidth,
                             onClick = { onArticleClick(lawCode, article.articleNumber, article.supplementaryProvisionLabel) },
                         )
+                    }
+                }
+
+                // 展開モード: 構造見出し + 条文をインターリーブ表示（折りたたみ対応）
+                if (!isInSearchMode && isExpanded && lawContent != null) {
+                    val visibleContent = getVisibleContent(lawCode)
+                    itemsIndexed(
+                        items = visibleContent,
+                        key = { _, item -> "${lawCode.name}_content_${item.orderIndex}" },
+                    ) { index, item ->
+                        when (item) {
+                            is LawContentItem.Heading -> {
+                                // リスト末尾の見出しのみ区切り線を非表示
+                                val nextItem = visibleContent.getOrNull(index + 1)
+                                val showDivider = nextItem != null
+                                StructureHeadingItem(
+                                    heading = item.heading,
+                                    useHalfWidth = useHalfWidth,
+                                    isCollapsed = item.orderIndex in (collapsedHeadings[lawCode] ?: emptySet()),
+                                    showDivider = showDivider,
+                                    onClick = { onHeadingClick(lawCode, item.orderIndex) },
+                                )
+                            }
+                            is LawContentItem.ArticleItem -> {
+                                // 次のアイテムが見出しまたはリスト末尾なら区切り線を非表示
+                                val nextItem = visibleContent.getOrNull(index + 1)
+                                val showDivider = nextItem is LawContentItem.ArticleItem
+                                ArticleListItem(
+                                    article = item.article,
+                                    useHalfWidth = useHalfWidth,
+                                    showDivider = showDivider,
+                                    onClick = { onArticleClick(lawCode, item.article.articleNumber, item.article.supplementaryProvisionLabel) },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -322,10 +361,62 @@ private fun LawHeader(
     }
 }
 
+/** 構造見出し（編・章・節など）の表示コンポーネント。タップで配下を折りたたみ可能。 */
+@Composable
+private fun StructureHeadingItem(
+    heading: StructureHeading,
+    useHalfWidth: Boolean,
+    isCollapsed: Boolean,
+    showDivider: Boolean = true,
+    onClick: () -> Unit,
+) {
+    val startPadding = 24.dp + (heading.level.depth * 8).dp
+    val title = if (useHalfWidth) heading.title.normalizeDisplay() else heading.title
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(start = startPadding, end = 16.dp, top = 12.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = when (heading.level) {
+                StructureHeading.Level.Part,
+                StructureHeading.Level.SupplementaryProvision -> MaterialTheme.typography.titleSmall
+                StructureHeading.Level.Chapter -> MaterialTheme.typography.titleSmall
+                else -> MaterialTheme.typography.bodyMedium
+            },
+            fontWeight = when (heading.level) {
+                StructureHeading.Level.Part,
+                StructureHeading.Level.SupplementaryProvision -> FontWeight.Bold
+                StructureHeading.Level.Chapter -> FontWeight.SemiBold
+                else -> FontWeight.Medium
+            },
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Icon(
+            imageVector = if (isCollapsed) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
+            contentDescription = if (isCollapsed) "展開" else "折りたたみ",
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        )
+    }
+    if (showDivider) {
+        HorizontalDivider(
+            modifier = Modifier.padding(start = startPadding, end = 16.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+        )
+    }
+}
+
 @Composable
 private fun ArticleListItem(
     article: Article,
     useHalfWidth: Boolean,
+    showDivider: Boolean = true,
     onClick: () -> Unit,
 ) {
     Row(
@@ -362,8 +453,10 @@ private fun ArticleListItem(
             }
         }
     }
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 32.dp),
-        color = MaterialTheme.colorScheme.outlineVariant,
-    )
+    if (showDivider) {
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 32.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
 }
