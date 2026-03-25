@@ -77,6 +77,13 @@ object DataProvidesModule {
                 )
                 """,
             )
+            // lawCode + orderIndex でのクエリを高速化するインデックスを追加
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_structure_headings_lawCode_orderIndex
+                ON structure_headings(lawCode, orderIndex)
+                """,
+            )
             // articles テーブルに orderIndex カラムを追加
             db.execSQL("ALTER TABLE articles ADD COLUMN orderIndex INTEGER NOT NULL DEFAULT 0")
         }
