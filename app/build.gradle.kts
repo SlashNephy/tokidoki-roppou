@@ -8,6 +8,7 @@ plugins {
     id("tokidokiroppou.kotlin.serialization")
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.appdistribution)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -112,6 +113,7 @@ dependencies {
     implementation(libs.timber)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.appcheck.playintegrity)
+    implementation(libs.firebase.crashlytics)
     "localImplementation"(libs.firebase.appcheck.debug)
     debugImplementation(libs.compose.ui.tooling)
 }
