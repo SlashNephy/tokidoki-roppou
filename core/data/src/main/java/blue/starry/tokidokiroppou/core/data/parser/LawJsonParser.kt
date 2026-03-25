@@ -17,7 +17,10 @@ import javax.inject.Singleton
 data class LawParseResult(
     val articles: List<Article>,
     val headings: List<StructureHeading>,
-    /** 条文に対応する orderIndex のマップ (articleNumber -> orderIndex) */
+    /**
+     * 条文に対応する orderIndex のマップ。
+     * キーは本文の条文なら articleNumber、附則の条文なら "${supplementaryProvisionLabel}:${articleNumber}" の形式。
+     */
     val articleOrderIndices: Map<String, Int>,
 )
 
