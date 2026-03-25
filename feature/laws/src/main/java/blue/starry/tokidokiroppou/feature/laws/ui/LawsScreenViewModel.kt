@@ -100,7 +100,10 @@ class LawsScreenViewModel @Inject constructor(
                 .map { it.orderIndex }
                 .toSet()
             _collapsedHeadings.value = _collapsedHeadings.value + (lawCode to headingIndices)
-            _loadingLaw.value = null
+            // 同じ法令のロード完了時のみスピナーを解除する（別法令の読み込み中に誤って消さない）
+            if (_loadingLaw.value == lawCode) {
+                _loadingLaw.value = null
+            }
         }
     }
 
