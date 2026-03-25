@@ -1,7 +1,11 @@
 package blue.starry.tokidokiroppou.core.data.repository
 
+import androidx.room.withTransaction
 import blue.starry.tokidokiroppou.core.data.api.EGovLawApiClient
+import blue.starry.tokidokiroppou.core.data.db.AppDatabase
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
+import blue.starry.tokidokiroppou.core.data.db.ArticleEntity
+import blue.starry.tokidokiroppou.core.data.db.StructureHeadingEntity
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataEntity
 import blue.starry.tokidokiroppou.core.data.db.StructureHeadingDao
@@ -22,6 +26,7 @@ import javax.inject.Singleton
 
 @Singleton
 class LawRepositoryImpl @Inject constructor(
+    private val database: AppDatabase,
     private val apiClient: EGovLawApiClient,
     private val jsonParser: LawJsonParser,
     private val articleDao: ArticleDao,
@@ -40,28 +45,40 @@ class LawRepositoryImpl @Inject constructor(
 
     override suspend fun getStructuredContent(lawCode: LawCode): List<LawContentItem> {
         // キャッシュ済みの条文と見出しを取得
-        val cachedArticles = articleDao.getByLawCode(lawCode.name).mapNotNull { entity ->
+        val cachedArticles = articleDao.getByLawCode(lawCode.name)
+        val cachedHeadings = structureHeadingDao.getByLawCode(lawCode.name)
+
+        // v8→v9 移行前のレガシーキャッシュを検出して再取得する
+        // レガシーキャッシュ: 条文はあるが見出しがなく、全 orderIndex が初期値(0)のまま
+        val isLegacyCache = cachedArticles.isNotEmpty() &&
+            cachedHeadings.isEmpty() &&
+            cachedArticles.all { it.orderIndex == 0 }
+
+        if (cachedArticles.isEmpty() || isLegacyCache) {
+            updateLawDataFromApi(lawCode)
+            // API 取得後に DB から再読み込み
+            return buildStructuredContent(lawCode)
+        }
+
+        return buildStructuredContent(cachedArticles, cachedHeadings)
+    }
+
+    /** DB のエンティティから LawContentItem リストを組み立てる */
+    private suspend fun buildStructuredContent(lawCode: LawCode): List<LawContentItem> {
+        val articles = articleDao.getByLawCode(lawCode.name)
+        val headings = structureHeadingDao.getByLawCode(lawCode.name)
+        return buildStructuredContent(articles, headings)
+    }
+
+    private fun buildStructuredContent(
+        articleEntities: List<ArticleEntity>,
+        headingEntities: List<StructureHeadingEntity>,
+    ): List<LawContentItem> {
+        val articles = articleEntities.mapNotNull { entity ->
             val article = entity.toDomain() ?: return@mapNotNull null
             LawContentItem.ArticleItem(article, entity.orderIndex)
         }
-        val cachedHeadings = structureHeadingDao.getByLawCode(lawCode.name).mapNotNull { entity ->
-            val heading = entity.toDomain() ?: return@mapNotNull null
-            LawContentItem.Heading(heading)
-        }
-
-        if (cachedArticles.isNotEmpty()) {
-            return (cachedArticles + cachedHeadings).sortedBy { it.orderIndex }
-        }
-
-        // キャッシュがなければ API から取得してキャッシュ
-        fetchAndCache(lawCode)
-
-        // キャッシュ後に再取得
-        val articles = articleDao.getByLawCode(lawCode.name).mapNotNull { entity ->
-            val article = entity.toDomain() ?: return@mapNotNull null
-            LawContentItem.ArticleItem(article, entity.orderIndex)
-        }
-        val headings = structureHeadingDao.getByLawCode(lawCode.name).mapNotNull { entity ->
+        val headings = headingEntities.mapNotNull { entity ->
             val heading = entity.toDomain() ?: return@mapNotNull null
             LawContentItem.Heading(heading)
         }
@@ -149,40 +166,7 @@ class LawRepositoryImpl @Inject constructor(
     }
 
     suspend fun refreshLawCode(lawCode: LawCode): Boolean {
-        return try {
-            val jsonString = apiClient.getLawData(lawCode.lawId)
-            val result = jsonParser.parse(jsonString, lawCode)
-            if (result.articles.isNotEmpty()) {
-                articleDao.deleteByLawCode(lawCode.name)
-                structureHeadingDao.deleteByLawCode(lawCode.name)
-                articleDao.insertAll(result.articles.map { article ->
-                    val key = if (article.supplementaryProvisionLabel != null) {
-                        "${article.supplementaryProvisionLabel}:${article.articleNumber}"
-                    } else {
-                        article.articleNumber
-                    }
-                    article.toEntity(orderIndex = result.articleOrderIndices[key] ?: 0)
-                })
-                structureHeadingDao.insertAll(result.headings.map { it.toEntity() })
-                Timber.d("Cached %d articles and %d headings from %s", result.articles.size, result.headings.size, lawCode.displayName)
-            }
-            val revisionInfo = apiClient.getLawRevisionInfo(lawCode.lawId)
-            if (revisionInfo != null) {
-                lawMetadataDao.upsert(
-                    LawMetadataEntity(
-                        lawCode = lawCode.name,
-                        lawNum = revisionInfo.lawNum,
-                        promulgationDate = revisionInfo.promulgationDate,
-                        lastAmendmentDate = revisionInfo.amendmentDate,
-                        lastAmendmentLawNum = revisionInfo.amendmentLawNum,
-                    )
-                )
-            }
-            true
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to refresh %s", lawCode.displayName)
-            false
-        }
+        return updateLawDataFromApi(lawCode) != null
     }
 
     suspend fun clearCache() {
@@ -200,22 +184,29 @@ class LawRepositoryImpl @Inject constructor(
         private const val REFRESH_THRESHOLD_MS = 24 * 60 * 60 * 1000L // 24時間
     }
 
-    private suspend fun fetchAndCache(lawCode: LawCode): List<Article> {
+    /**
+     * API からデータを取得し、トランザクション内で DB にキャッシュする共通処理。
+     * 成功時は取得した条文リストを返し、失敗時は null を返す。
+     */
+    private suspend fun updateLawDataFromApi(lawCode: LawCode): List<Article>? {
         return try {
             val jsonString = apiClient.getLawData(lawCode.lawId)
             val result = jsonParser.parse(jsonString, lawCode)
             if (result.articles.isNotEmpty()) {
-                articleDao.deleteByLawCode(lawCode.name)
-                structureHeadingDao.deleteByLawCode(lawCode.name)
-                articleDao.insertAll(result.articles.map { article ->
-                    val key = if (article.supplementaryProvisionLabel != null) {
-                        "${article.supplementaryProvisionLabel}:${article.articleNumber}"
-                    } else {
-                        article.articleNumber
-                    }
-                    article.toEntity(orderIndex = result.articleOrderIndices[key] ?: 0)
-                })
-                structureHeadingDao.insertAll(result.headings.map { it.toEntity() })
+                // 複数テーブルの更新をトランザクションで保護する
+                database.withTransaction {
+                    articleDao.deleteByLawCode(lawCode.name)
+                    structureHeadingDao.deleteByLawCode(lawCode.name)
+                    articleDao.insertAll(result.articles.map { article ->
+                        val key = if (article.supplementaryProvisionLabel != null) {
+                            "${article.supplementaryProvisionLabel}:${article.articleNumber}"
+                        } else {
+                            article.articleNumber
+                        }
+                        article.toEntity(orderIndex = result.articleOrderIndices[key] ?: 0)
+                    })
+                    structureHeadingDao.insertAll(result.headings.map { it.toEntity() })
+                }
                 Timber.d("Cached %d articles and %d headings from %s", result.articles.size, result.headings.size, lawCode.displayName)
             }
             val revisionInfo = apiClient.getLawRevisionInfo(lawCode.lawId)
@@ -232,8 +223,12 @@ class LawRepositoryImpl @Inject constructor(
             }
             result.articles
         } catch (e: Exception) {
-            Timber.e(e, "Failed to fetch articles for %s", lawCode.displayName)
-            emptyList()
+            Timber.e(e, "Failed to update law data for %s", lawCode.displayName)
+            null
         }
+    }
+
+    private suspend fun fetchAndCache(lawCode: LawCode): List<Article> {
+        return updateLawDataFromApi(lawCode) ?: emptyList()
     }
 }
