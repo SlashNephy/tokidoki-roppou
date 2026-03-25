@@ -54,6 +54,9 @@ class TokidokiRoppouApplication : Application(), Configuration.Provider {
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
+        } else {
+            // リリースビルドでは Crashlytics にログを転送
+            Timber.plant(CrashlyticsTree())
         }
 
         notificationSender.createNotificationChannel()
