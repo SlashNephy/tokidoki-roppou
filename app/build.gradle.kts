@@ -82,6 +82,12 @@ android {
         serviceCredentialsFile = rootProject.file("firebase-service-account.json").path
         groups = "tester"
     }
+
+    productFlavors.getByName("production") {
+        firebaseAppDistribution {
+            groups = "tester-production"
+        }
+    }
 }
 
 dependencies {
