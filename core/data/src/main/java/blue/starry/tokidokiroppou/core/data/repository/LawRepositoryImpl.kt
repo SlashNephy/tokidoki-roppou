@@ -35,7 +35,7 @@ class LawRepositoryImpl @Inject constructor(
 ) : LawRepository {
 
     override suspend fun getArticles(lawCode: LawCode): List<Article> {
-        val cached = articleDao.getByLawCode(lawCode.name).mapNotNull { it.toDomain() }
+        val cached = articleDao.getByLawCodeOrdered(lawCode.name).mapNotNull { it.toDomain() }
         if (cached.isNotEmpty()) {
             return cached
         }

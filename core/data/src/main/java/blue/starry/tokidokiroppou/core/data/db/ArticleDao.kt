@@ -10,6 +10,9 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE lawCode = :lawCode")
     suspend fun getByLawCode(lawCode: String): List<ArticleEntity>
 
+    @Query("SELECT * FROM articles WHERE lawCode = :lawCode ORDER BY orderIndex ASC, id ASC")
+    suspend fun getByLawCodeOrdered(lawCode: String): List<ArticleEntity>
+
     @Query("SELECT * FROM articles WHERE lawCode IN (:lawCodes) ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomByLawCodes(lawCodes: List<String>): ArticleEntity?
 

@@ -16,6 +16,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -116,6 +118,31 @@ fun HomeScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        androidx.compose.material3.IconButton(
+                            onClick = { state.previousArticle?.let(viewModel::navigateTo) },
+                            enabled = state.previousArticle != null,
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "前の条文へ",
+                            )
+                        }
+                        androidx.compose.material3.IconButton(
+                            onClick = { state.nextArticle?.let(viewModel::navigateTo) },
+                            enabled = state.nextArticle != null,
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = "次の条文へ",
+                            )
+                        }
+                    }
+
                     ArticleCard(
                         article = state.article,
                         useHalfWidthParentheses = state.useHalfWidthParentheses,
