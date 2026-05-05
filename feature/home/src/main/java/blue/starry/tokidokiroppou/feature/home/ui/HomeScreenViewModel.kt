@@ -25,6 +25,11 @@ class HomeScreenViewModel @Inject constructor(
     private val settingsRepository: ApplicationSettingsRepository,
     private val bookmarkRepository: BookmarkRepository,
 ) : ViewModel() {
+    data class ArticleNavigationTarget(
+        val lawCode: String,
+        val articleNumber: String,
+        val supplementaryProvisionLabel: String? = null,
+    )
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -86,7 +91,15 @@ class HomeScreenViewModel @Inject constructor(
             if (article != null) {
                 val related = lawRepository.getRelatedArticles(article)
                 val metadata = lawRepository.getLawMetadata(article.lawCode)
-                _uiState.value = HomeUiState.Loaded(article, related, metadata, settings.useHalfWidthParentheses)
+                val navigation = buildNavigationTargets(article)
+                _uiState.value = HomeUiState.Loaded(
+                    article = article,
+                    relatedArticles = related,
+                    lawMetadata = metadata,
+                    useHalfWidthParentheses = settings.useHalfWidthParentheses,
+                    previousArticle = navigation.first,
+                    nextArticle = navigation.second,
+                )
             } else {
                 _uiState.value = HomeUiState.Error("条文を取得できませんでした")
             }
@@ -104,11 +117,39 @@ class HomeScreenViewModel @Inject constructor(
             if (article != null) {
                 val related = lawRepository.getRelatedArticles(article)
                 val metadata = lawRepository.getLawMetadata(article.lawCode)
-                _uiState.value = HomeUiState.Loaded(article, related, metadata, settings.useHalfWidthParentheses)
+                val navigation = buildNavigationTargets(article)
+                _uiState.value = HomeUiState.Loaded(
+                    article = article,
+                    relatedArticles = related,
+                    lawMetadata = metadata,
+                    useHalfWidthParentheses = settings.useHalfWidthParentheses,
+                    previousArticle = navigation.first,
+                    nextArticle = navigation.second,
+                )
             } else {
                 _uiState.value = HomeUiState.Error("条文を取得できませんでした")
             }
         }
+    }
+
+    fun navigateTo(target: ArticleNavigationTarget) {
+        loadSpecificArticle(target.lawCode, target.articleNumber, target.supplementaryProvisionLabel)
+    }
+
+    private suspend fun buildNavigationTargets(article: Article): Pair<ArticleNavigationTarget?, ArticleNavigationTarget?> {
+        val articles = lawRepository.getArticles(article.lawCode)
+        val index = articles.indexOfFirst {
+            it.articleNumber == article.articleNumber &&
+                it.supplementaryProvisionLabel == article.supplementaryProvisionLabel
+        }
+        if (index == -1) return null to null
+        val previous = articles.getOrNull(index - 1)?.let {
+            ArticleNavigationTarget(it.lawCode.name, it.articleNumber, it.supplementaryProvisionLabel)
+        }
+        val next = articles.getOrNull(index + 1)?.let {
+            ArticleNavigationTarget(it.lawCode.name, it.articleNumber, it.supplementaryProvisionLabel)
+        }
+        return previous to next
     }
 }
 
@@ -119,6 +160,8 @@ sealed interface HomeUiState {
         val relatedArticles: List<Article>,
         val lawMetadata: LawMetadata?,
         val useHalfWidthParentheses: Boolean,
+        val previousArticle: HomeScreenViewModel.ArticleNavigationTarget?,
+        val nextArticle: HomeScreenViewModel.ArticleNavigationTarget?,
     ) : HomeUiState
     data object NoLawSelected : HomeUiState
     data class Error(val message: String) : HomeUiState
