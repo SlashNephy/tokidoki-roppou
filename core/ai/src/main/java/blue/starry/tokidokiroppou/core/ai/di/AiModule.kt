@@ -30,7 +30,7 @@ abstract class AiBindsModule {
 }
 
 object AiConstants {
-    const val MODEL_NAME = "gemini-3.1-flash-lite-preview"
+    const val MODEL_NAME = "gemini-3.5-flash"
 }
 
 @Module
