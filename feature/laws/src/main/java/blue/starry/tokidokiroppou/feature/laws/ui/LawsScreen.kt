@@ -52,6 +52,7 @@ import blue.starry.tokidokiroppou.core.domain.model.Law
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
@@ -63,7 +64,7 @@ private enum class LawsSearchMode {
 
 @Composable
 fun LawsScreen(
-    onArticleClick: (LawCode, String, String?) -> Unit,
+    onArticleClick: (String, String, String?) -> Unit,
     viewModel: LawsScreenViewModel = hiltViewModel(),
 ) {
     var searchMode by rememberSaveable { mutableStateOf(LawsSearchMode.CachedArticles) }
@@ -80,10 +81,12 @@ fun LawsScreen(
     val catalogSearchResults by viewModel.catalogSearchResults.collectAsStateWithLifecycle()
     val isCatalogSearching by viewModel.isCatalogSearching.collectAsStateWithLifecycle()
     val catalogSearchError by viewModel.catalogSearchError.collectAsStateWithLifecycle()
+    val addedLaws by viewModel.addedLaws.collectAsStateWithLifecycle()
 
     LawsContent(
         searchMode = searchMode,
         lawMetadata = lawMetadata,
+        addedLaws = addedLaws,
         useHalfWidth = useHalfWidth,
         expandedLaw = expandedLaw,
         structuredContent = structuredContent,
@@ -112,6 +115,7 @@ fun LawsScreen(
         onHeadingClick = viewModel::toggleHeading,
         onArticleClick = onArticleClick,
         getFilteredLawCodes = viewModel::getFilteredLawCodes,
+        getFilteredAddedLaws = viewModel::getFilteredAddedLaws,
         getArticleCount = viewModel::getArticleCount,
         getVisibleContent = viewModel::getVisibleContent,
     )
@@ -121,14 +125,15 @@ fun LawsScreen(
 private fun LawsContent(
     searchMode: LawsSearchMode,
     lawMetadata: Map<LawCode, LawMetadata>,
+    addedLaws: List<Law>,
     useHalfWidth: Boolean,
-    expandedLaw: LawCode?,
-    structuredContent: Map<LawCode, List<LawContentItem>>,
-    collapsedHeadings: Map<LawCode, Set<Int>>,
-    loadingLaw: LawCode?,
+    expandedLaw: LawId?,
+    structuredContent: Map<LawId, List<LawContentItem>>,
+    collapsedHeadings: Map<LawId, Set<Int>>,
+    loadingLaw: LawId?,
     searchQuery: String,
     catalogSearchQuery: String,
-    searchResults: Map<LawCode, List<Article>>?,
+    searchResults: Map<LawId, List<Article>>?,
     isSearching: Boolean,
     catalogSearchResults: List<Law>,
     isCatalogSearching: Boolean,
@@ -137,12 +142,13 @@ private fun LawsContent(
     onSearchQueryChanged: (String) -> Unit,
     onCatalogSearchQueryChanged: (String) -> Unit,
     onAddCatalogLaw: (Law) -> Unit,
-    onLawClick: (LawCode) -> Unit,
-    onHeadingClick: (LawCode, Int) -> Unit,
-    onArticleClick: (LawCode, String, String?) -> Unit,
+    onLawClick: (LawId) -> Unit,
+    onHeadingClick: (LawId, Int) -> Unit,
+    onArticleClick: (String, String, String?) -> Unit,
     getFilteredLawCodes: (LawCategory) -> List<LawCode>,
-    getArticleCount: (LawCode) -> Int?,
-    getVisibleContent: (LawCode) -> List<LawContentItem>,
+    getFilteredAddedLaws: (List<Law>) -> List<Law>,
+    getArticleCount: (LawId) -> Int?,
+    getVisibleContent: (LawId) -> List<LawContentItem>,
 ) {
     val activeSearchQuery = when (searchMode) {
         LawsSearchMode.CachedArticles -> searchQuery
@@ -293,23 +299,24 @@ private fun LawsContent(
                 }
 
                 lawCodes.forEach { lawCode ->
-                    val isExpanded = expandedLaw == lawCode
+                    val lawId = LawId(lawCode.lawId)
+                    val isExpanded = expandedLaw == lawId
                     val metadata = lawMetadata[lawCode]
-                    val lawContent = structuredContent[lawCode]
-                    val isLoading = loadingLaw == lawCode
-                    val matchedArticles = if (isInSearchMode) searchResults?.get(lawCode) else null
+                    val lawContent = structuredContent[lawId]
+                    val isLoading = loadingLaw == lawId
+                    val matchedArticles = if (isInSearchMode) searchResults?.get(lawId) else null
 
                     item(key = "law_${lawCode.name}") {
                         LawHeader(
-                            lawCode = lawCode,
-                            metadata = metadata,
+                            displayName = lawCode.displayName,
+                            lawNum = metadata?.lawNum,
                             useHalfWidth = useHalfWidth,
                             isExpanded = isExpanded,
-                            articleCount = getArticleCount(lawCode),
+                            articleCount = getArticleCount(lawId),
                             matchedCount = matchedArticles?.size,
                             isLoading = isLoading,
                             isSearchMode = isInSearchMode,
-                            onClick = { onLawClick(lawCode) },
+                            onClick = { onLawClick(lawId) },
                         )
                     }
 
@@ -322,14 +329,14 @@ private fun LawsContent(
                             ArticleListItem(
                                 article = article,
                                 useHalfWidth = useHalfWidth,
-                                onClick = { onArticleClick(lawCode, article.articleNumber, article.supplementaryProvisionLabel) },
+                                onClick = { onArticleClick(lawId.value, article.articleNumber, article.supplementaryProvisionLabel) },
                             )
                         }
                     }
 
                     // 展開モード: 構造見出し + 条文をインターリーブ表示（折りたたみ対応）
                     if (!isInSearchMode && isExpanded && lawContent != null) {
-                        val visibleContent = getVisibleContent(lawCode)
+                        val visibleContent = getVisibleContent(lawId)
                         itemsIndexed(
                             items = visibleContent,
                             key = { _, item -> "${lawCode.name}_content_${item.orderIndex}" },
@@ -342,9 +349,9 @@ private fun LawsContent(
                                     StructureHeadingItem(
                                         heading = item.heading,
                                         useHalfWidth = useHalfWidth,
-                                        isCollapsed = item.orderIndex in (collapsedHeadings[lawCode] ?: emptySet()),
+                                        isCollapsed = item.orderIndex in (collapsedHeadings[lawId] ?: emptySet()),
                                         showDivider = showDivider,
-                                        onClick = { onHeadingClick(lawCode, item.orderIndex) },
+                                        onClick = { onHeadingClick(lawId, item.orderIndex) },
                                     )
                                 }
 
@@ -356,7 +363,81 @@ private fun LawsContent(
                                         article = item.article,
                                         useHalfWidth = useHalfWidth,
                                         showDivider = showDivider,
-                                        onClick = { onArticleClick(lawCode, item.article.articleNumber, item.article.supplementaryProvisionLabel) },
+                                        onClick = { onArticleClick(lawId.value, item.article.articleNumber, item.article.supplementaryProvisionLabel) },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            val filteredAddedLaws = getFilteredAddedLaws(addedLaws)
+            if (filteredAddedLaws.isNotEmpty()) {
+                item(key = "header_added_laws") {
+                    AddedLawsHeader()
+                }
+
+                filteredAddedLaws.forEach { law ->
+                    val isExpanded = expandedLaw == law.id
+                    val lawContent = structuredContent[law.id]
+                    val isLoading = loadingLaw == law.id
+                    val matchedArticles = if (isInSearchMode) searchResults?.get(law.id) else null
+
+                    item(key = "added_law_${law.id.value}") {
+                        LawHeader(
+                            displayName = law.displayName,
+                            lawNum = law.lawNum,
+                            useHalfWidth = useHalfWidth,
+                            isExpanded = isExpanded,
+                            articleCount = getArticleCount(law.id),
+                            matchedCount = matchedArticles?.size,
+                            isLoading = isLoading,
+                            isSearchMode = isInSearchMode,
+                            onClick = { onLawClick(law.id) },
+                        )
+                    }
+
+                    if (isInSearchMode && matchedArticles != null) {
+                        itemsIndexed(
+                            items = matchedArticles,
+                            key = { index, _ -> "${law.id.value}_search_${index}" },
+                        ) { _, article ->
+                            ArticleListItem(
+                                article = article,
+                                useHalfWidth = useHalfWidth,
+                                onClick = { onArticleClick(law.id.value, article.articleNumber, article.supplementaryProvisionLabel) },
+                            )
+                        }
+                    }
+
+                    if (!isInSearchMode && isExpanded && lawContent != null) {
+                        val visibleContent = getVisibleContent(law.id)
+                        itemsIndexed(
+                            items = visibleContent,
+                            key = { _, item -> "${law.id.value}_content_${item.orderIndex}" },
+                        ) { index, item ->
+                            when (item) {
+                                is LawContentItem.Heading -> {
+                                    val nextItem = visibleContent.getOrNull(index + 1)
+                                    val showDivider = nextItem != null
+                                    StructureHeadingItem(
+                                        heading = item.heading,
+                                        useHalfWidth = useHalfWidth,
+                                        isCollapsed = item.orderIndex in (collapsedHeadings[law.id] ?: emptySet()),
+                                        showDivider = showDivider,
+                                        onClick = { onHeadingClick(law.id, item.orderIndex) },
+                                    )
+                                }
+
+                                is LawContentItem.ArticleItem -> {
+                                    val nextItem = visibleContent.getOrNull(index + 1)
+                                    val showDivider = nextItem is LawContentItem.ArticleItem
+                                    ArticleListItem(
+                                        article = item.article,
+                                        useHalfWidth = useHalfWidth,
+                                        showDivider = showDivider,
+                                        onClick = { onArticleClick(law.id.value, item.article.articleNumber, item.article.supplementaryProvisionLabel) },
                                     )
                                 }
                             }
@@ -478,9 +559,33 @@ private fun CategoryHeader(
 }
 
 @Composable
+private fun AddedLawsHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Gavel,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "追加した法令",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
 private fun LawHeader(
-    lawCode: LawCode,
-    metadata: LawMetadata?,
+    displayName: String,
+    lawNum: String?,
     useHalfWidth: Boolean,
     isExpanded: Boolean,
     articleCount: Int?,
@@ -510,15 +615,15 @@ private fun LawHeader(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = lawCode.displayName,
+                    text = displayName,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )
 
-                metadata?.let {
-                    val lawNum = if (useHalfWidth) it.lawNum.normalizeDisplay() else it.lawNum
+                lawNum?.let {
+                    val displayLawNum = if (useHalfWidth) it.normalizeDisplay() else it
                     Text(
-                        text = lawNum,
+                        text = displayLawNum,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

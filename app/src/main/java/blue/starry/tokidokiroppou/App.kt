@@ -207,9 +207,9 @@ fun App() {
                 }
                 entry<LawsRoute> {
                     LawsScreen(
-                        onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
+                        onArticleClick = { lawId, articleNumber, supplementaryProvisionLabel ->
                             // 条文クリック: 法令一覧をスタックに残して条文詳細画面に遷移
-                            backStack.add(HomeRoute(lawCode.lawId, articleNumber, supplementaryProvisionLabel))
+                            backStack.add(HomeRoute(lawId, articleNumber, supplementaryProvisionLabel))
                         },
                     )
                 }

@@ -48,25 +48,31 @@ class LawsScreenViewModel @Inject constructor(
     private val _useHalfWidthParentheses = MutableStateFlow(false)
     val useHalfWidthParentheses: StateFlow<Boolean> = _useHalfWidthParentheses.asStateFlow()
 
-    private val _expandedLaw = MutableStateFlow<LawCode?>(null)
-    val expandedLaw: StateFlow<LawCode?> = _expandedLaw.asStateFlow()
+    val addedLaws: StateFlow<List<Law>> = lawCatalogRepository.observeLaws()
+        .map { laws ->
+            laws.filter { it.isAdded && !it.isPreset }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _expandedLaw = MutableStateFlow<LawId?>(null)
+    val expandedLaw: StateFlow<LawId?> = _expandedLaw.asStateFlow()
 
     /** 構造見出し付きの条文リスト（法令展開時に使用） */
-    private val _structuredContent = MutableStateFlow<Map<LawCode, List<LawContentItem>>>(emptyMap())
-    val structuredContent: StateFlow<Map<LawCode, List<LawContentItem>>> = _structuredContent.asStateFlow()
+    private val _structuredContent = MutableStateFlow<Map<LawId, List<LawContentItem>>>(emptyMap())
+    val structuredContent: StateFlow<Map<LawId, List<LawContentItem>>> = _structuredContent.asStateFlow()
 
     /** 折りたたまれている見出しの orderIndex の集合（法令ごと） */
-    private val _collapsedHeadings = MutableStateFlow<Map<LawCode, Set<Int>>>(emptyMap())
-    val collapsedHeadings: StateFlow<Map<LawCode, Set<Int>>> = _collapsedHeadings.asStateFlow()
+    private val _collapsedHeadings = MutableStateFlow<Map<LawId, Set<Int>>>(emptyMap())
+    val collapsedHeadings: StateFlow<Map<LawId, Set<Int>>> = _collapsedHeadings.asStateFlow()
 
-    private val _loadingLaw = MutableStateFlow<LawCode?>(null)
-    val loadingLaw: StateFlow<LawCode?> = _loadingLaw.asStateFlow()
+    private val _loadingLaw = MutableStateFlow<LawId?>(null)
+    val loadingLaw: StateFlow<LawId?> = _loadingLaw.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _searchResults = MutableStateFlow<Map<LawCode, List<Article>>?>(null)
-    val searchResults: StateFlow<Map<LawCode, List<Article>>?> = _searchResults.asStateFlow()
+    private val _searchResults = MutableStateFlow<Map<LawId, List<Article>>?>(null)
+    val searchResults: StateFlow<Map<LawId, List<Article>>?> = _searchResults.asStateFlow()
 
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
@@ -111,41 +117,36 @@ class LawsScreenViewModel @Inject constructor(
                 } else {
                     _isSearching.value = true
                     _searchResults.value = lawRepository.searchArticles(query)
-                        .mapNotNull { (lawId, articles) ->
-                            val lawCode = LawCode.fromStoredValue(lawId.value) ?: return@mapNotNull null
-                            lawCode to articles
-                        }
-                        .toMap()
                     _isSearching.value = false
                 }
             }
         }
     }
 
-    fun toggleLaw(lawCode: LawCode) {
-        if (_expandedLaw.value == lawCode) {
+    fun toggleLaw(lawId: LawId) {
+        if (_expandedLaw.value == lawId) {
             _expandedLaw.value = null
         } else {
-            _expandedLaw.value = lawCode
-            if (lawCode !in _structuredContent.value) {
-                loadStructuredContent(lawCode)
+            _expandedLaw.value = lawId
+            if (lawId !in _structuredContent.value) {
+                loadStructuredContent(lawId)
             }
         }
     }
 
-    private fun loadStructuredContent(lawCode: LawCode) {
+    private fun loadStructuredContent(lawId: LawId) {
         viewModelScope.launch {
-            _loadingLaw.value = lawCode
-            val content = lawRepository.getStructuredContent(LawId(lawCode.lawId))
-            _structuredContent.value = _structuredContent.value + (lawCode to content)
+            _loadingLaw.value = lawId
+            val content = lawRepository.getStructuredContent(lawId)
+            _structuredContent.value = _structuredContent.value + (lawId to content)
             // デフォルトで全見出しを折りたたみ状態にする
             val headingIndices = content
                 .filterIsInstance<LawContentItem.Heading>()
                 .map { it.orderIndex }
                 .toSet()
-            _collapsedHeadings.value = _collapsedHeadings.value + (lawCode to headingIndices)
+            _collapsedHeadings.value = _collapsedHeadings.value + (lawId to headingIndices)
             // 同じ法令のロード完了時のみスピナーを解除する（別法令の読み込み中に誤って消さない）
-            if (_loadingLaw.value == lawCode) {
+            if (_loadingLaw.value == lawId) {
                 _loadingLaw.value = null
             }
         }
@@ -204,26 +205,40 @@ class LawsScreenViewModel @Inject constructor(
         if (query.isBlank()) return codes
         val results = _searchResults.value
         return codes.filter { lawCode ->
+            val lawId = LawId(lawCode.lawId)
             lawCode.displayName.contains(query, ignoreCase = true)
-                || (results != null && lawCode in results)
+                || (results != null && lawId in results)
+        }
+    }
+
+    fun getFilteredAddedLaws(laws: List<Law>): List<Law> {
+        val query = _searchQuery.value
+        if (query.isBlank()) return laws
+        val results = _searchResults.value
+
+        return laws.filter { law ->
+            law.displayName.contains(query, ignoreCase = true)
+                || law.lawNum?.contains(query, ignoreCase = true) == true
+                || law.id.value.contains(query, ignoreCase = true)
+                || (results != null && law.id in results)
         }
     }
 
     /** 見出しの折りたたみ状態をトグルする */
-    fun toggleHeading(lawCode: LawCode, orderIndex: Int) {
+    fun toggleHeading(lawId: LawId, orderIndex: Int) {
         val current = _collapsedHeadings.value
-        val existing = current[lawCode] ?: emptySet()
+        val existing = current[lawId] ?: emptySet()
         val updated = if (orderIndex in existing) existing - orderIndex else existing + orderIndex
-        _collapsedHeadings.value = current + (lawCode to updated)
+        _collapsedHeadings.value = current + (lawId to updated)
     }
 
     /**
      * 折りたたみ状態を反映したコンテンツリストを返す。
      * 折りたたまれた見出しの配下（同レベル以上の次の見出しまで）を非表示にする。
      */
-    fun getVisibleContent(lawCode: LawCode): List<LawContentItem> {
-        val content = _structuredContent.value[lawCode] ?: return emptyList()
-        val collapsed = _collapsedHeadings.value[lawCode] ?: emptySet()
+    fun getVisibleContent(lawId: LawId): List<LawContentItem> {
+        val content = _structuredContent.value[lawId] ?: return emptyList()
+        val collapsed = _collapsedHeadings.value[lawId] ?: emptySet()
         if (collapsed.isEmpty()) return content
 
         val result = mutableListOf<LawContentItem>()
@@ -255,8 +270,8 @@ class LawsScreenViewModel @Inject constructor(
     }
 
     /** 展開中の法令の条文数を返す（見出しを除く） */
-    fun getArticleCount(lawCode: LawCode): Int? {
-        val content = _structuredContent.value[lawCode] ?: return null
+    fun getArticleCount(lawId: LawId): Int? {
+        val content = _structuredContent.value[lawId] ?: return null
         return content.count { it is LawContentItem.ArticleItem }
     }
 }
