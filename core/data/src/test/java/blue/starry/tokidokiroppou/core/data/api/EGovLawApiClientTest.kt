@@ -7,7 +7,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.fail
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 
 class EGovLawApiClientTest {
@@ -24,6 +26,24 @@ class EGovLawApiClientTest {
         val laws = apiClient.searchLaws(" \n\t ")
 
         assertEquals(emptyList(), laws)
+    }
+
+    @Test
+    fun searchLawsPropagatesCancellationException() = runTest {
+        val cancellationException = CancellationException("Search was cancelled.")
+        val apiClient = EGovLawApiClient(
+            HttpClient(
+                MockEngine {
+                    throw cancellationException
+                },
+            ),
+        )
+
+        val thrown = assertFailsWith<CancellationException> {
+            apiClient.searchLaws("民法")
+        }
+
+        assertEquals(cancellationException.message, thrown.message)
     }
 
     @Test

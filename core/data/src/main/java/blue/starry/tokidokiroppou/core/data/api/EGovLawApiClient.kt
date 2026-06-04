@@ -7,6 +7,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonArray
@@ -85,6 +86,9 @@ class EGovLawApiClient @Inject constructor(
             val body = response.bodyAsText()
             parseKeywordSearchResponse(body)
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             Timber.e(e, "Failed to search e-Gov laws for %s", trimmedQuery)
             emptyList()
         }
