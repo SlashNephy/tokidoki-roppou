@@ -3,6 +3,8 @@ package blue.starry.tokidokiroppou.core.data.repository
 import blue.starry.tokidokiroppou.core.data.api.EGovLawApiClient
 import blue.starry.tokidokiroppou.core.data.db.LawDao
 import blue.starry.tokidokiroppou.core.data.db.LawEntity
+import blue.starry.tokidokiroppou.core.data.db.toDomain
+import blue.starry.tokidokiroppou.core.data.db.toEntity
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
 import blue.starry.tokidokiroppou.core.domain.model.Law
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
@@ -91,6 +93,21 @@ class LawCatalogRepositoryImplTest {
     }
 
     @Test
+    fun removeAddedLawWithPresetLawDoesNotDeleteLawOrDisableNotification() = runTest {
+        val presetLaw = PresetLaw.CIVIL_CODE.toLaw()
+        val savedPresetLaw = createLaw(id = presetLaw.id, displayName = "保存済み民法")
+        val lawDao = FakeLawDao(initialEntities = listOf(savedPresetLaw.toEntity()))
+        val settingsRepository = FakeApplicationSettingsRepository()
+        val repository = createRepository(lawDao = lawDao, settingsRepository = settingsRepository)
+
+        repository.removeAddedLaw(presetLaw.id)
+
+        assertEquals(savedPresetLaw.copy(isAdded = true), lawDao.getById(presetLaw.id.value)?.toDomain())
+        assertEquals(emptyList(), lawDao.deletedLawIds)
+        assertEquals(emptyList(), settingsRepository.lawEnabledCalls)
+    }
+
+    @Test
     fun getLawReturnsPresetBeforeSavedLaw() = runTest {
         val presetLaw = PresetLaw.CIVIL_CODE.toLaw()
         val savedPresetLaw = createLaw(id = presetLaw.id, displayName = "保存済み民法")
@@ -142,6 +159,7 @@ class LawCatalogRepositoryImplTest {
         initialEntities: List<LawEntity> = emptyList(),
     ) : LawDao {
         private val entities = MutableStateFlow(initialEntities)
+        val deletedLawIds = mutableListOf<String>()
 
         override fun observeAll(): Flow<List<LawEntity>> {
             return entities
@@ -157,6 +175,7 @@ class LawCatalogRepositoryImplTest {
         }
 
         override suspend fun delete(lawId: String) {
+            deletedLawIds += lawId
             entities.value = entities.value.filterNot { it.lawId == lawId }
         }
     }
@@ -189,23 +208,4 @@ class LawCatalogRepositoryImplTest {
         }
     }
 
-    private fun Law.toEntity(): LawEntity {
-        return LawEntity(
-            lawId = id.value,
-            displayName = displayName,
-            lawNum = lawNum,
-            category = category.name,
-        )
-    }
-
-    private fun LawEntity.toDomain(): Law {
-        return Law(
-            id = LawId(lawId),
-            displayName = displayName,
-            lawNum = lawNum,
-            category = LawCategory.valueOf(category),
-            isPreset = false,
-            isAdded = true,
-        )
-    }
 }

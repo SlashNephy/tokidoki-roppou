@@ -41,10 +41,11 @@ class LawCatalogRepositoryImpl @Inject constructor(
     }
 
     override suspend fun removeAddedLaw(lawId: LawId) {
-        if (PresetLaw.fromLawId(lawId) == null) {
-            lawDao.delete(lawId.value)
+        if (PresetLaw.fromLawId(lawId) != null) {
+            return
         }
 
+        lawDao.delete(lawId.value)
         settingsRepository.setLawEnabled(lawId, enabled = false)
     }
 

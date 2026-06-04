@@ -3,10 +3,29 @@ package blue.starry.tokidokiroppou.core.data.api
 import blue.starry.tokidokiroppou.core.domain.model.Law
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawId
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.fail
+import kotlinx.coroutines.test.runTest
 
 class EGovLawApiClientTest {
+    @Test
+    fun searchLawsReturnsEmptyListForBlankQueryWithoutNetwork() = runTest {
+        val apiClient = EGovLawApiClient(
+            HttpClient(
+                MockEngine {
+                    fail("Blank query must not send a network request.")
+                },
+            ),
+        )
+
+        val laws = apiClient.searchLaws(" \n\t ")
+
+        assertEquals(emptyList(), laws)
+    }
+
     @Test
     fun parseKeywordSearchResponseUsesLawInfoAndRevisionInfoAndDeduplicatesByLawId() {
         val body = """
