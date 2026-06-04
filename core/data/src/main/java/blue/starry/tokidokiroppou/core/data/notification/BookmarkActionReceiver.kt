@@ -29,8 +29,8 @@ class BookmarkActionReceiver : BroadcastReceiver() {
             return
         }
 
-        val lawIdValue = intent.getStringExtra(EXTRA_LAW_CODE) ?: return
-        val articleNumber = intent.getStringExtra(EXTRA_ARTICLE_NUMBER) ?: return
+        val lawIdValue = intent.getNonBlankStringExtra(EXTRA_LAW_CODE) ?: return
+        val articleNumber = intent.getNonBlankStringExtra(EXTRA_ARTICLE_NUMBER) ?: return
         val supplementaryProvisionLabel = intent.getStringExtra(EXTRA_SUPPLEMENTARY_PROVISION_LABEL) ?: ""
 
         val pendingResult = goAsync()
@@ -59,4 +59,8 @@ class BookmarkActionReceiver : BroadcastReceiver() {
         const val EXTRA_ARTICLE_NUMBER = "extra_bookmark_article_number"
         const val EXTRA_SUPPLEMENTARY_PROVISION_LABEL = "extra_bookmark_supplementary_provision_label"
     }
+}
+
+private fun Intent.getNonBlankStringExtra(name: String): String? {
+    return getStringExtra(name)?.takeUnless { it.isBlank() }
 }
