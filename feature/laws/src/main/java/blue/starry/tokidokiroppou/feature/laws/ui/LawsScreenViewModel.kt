@@ -17,6 +17,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -156,19 +157,21 @@ class LawsScreenViewModel @Inject constructor(
 
     fun searchCatalog(query: String) {
         val trimmedQuery = query.trim()
+        val generation = ++catalogSearchGeneration
         catalogSearchJob?.cancel()
         _catalogSearchError.value = null
 
         if (trimmedQuery.isBlank()) {
-            catalogSearchGeneration++
             rawCatalogSearchResults.value = emptyList()
             _isCatalogSearching.value = false
             return
         }
 
-        val generation = ++catalogSearchGeneration
+        rawCatalogSearchResults.value = emptyList()
+        _isCatalogSearching.value = true
+
         catalogSearchJob = viewModelScope.launch {
-            _isCatalogSearching.value = true
+            delay(300)
             try {
                 val results = lawCatalogRepository.searchEGovLaws(trimmedQuery)
                 if (generation == catalogSearchGeneration) {
@@ -179,7 +182,7 @@ class LawsScreenViewModel @Inject constructor(
             } catch (exception: Exception) {
                 if (generation == catalogSearchGeneration) {
                     rawCatalogSearchResults.value = emptyList()
-                    _catalogSearchError.value = exception.message ?: "e-Gov law search failed."
+                    _catalogSearchError.value = "e-Gov 法令検索に失敗しました"
                 }
             } finally {
                 if (generation == catalogSearchGeneration) {
