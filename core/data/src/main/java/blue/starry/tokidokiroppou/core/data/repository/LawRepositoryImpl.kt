@@ -11,6 +11,7 @@ import blue.starry.tokidokiroppou.core.data.db.LawMetadataEntity
 import blue.starry.tokidokiroppou.core.data.db.StructureHeadingDao
 import blue.starry.tokidokiroppou.core.data.db.toDomain
 import blue.starry.tokidokiroppou.core.data.db.toEntity
+import blue.starry.tokidokiroppou.core.data.db.toStoredLawIdOrNull
 import blue.starry.tokidokiroppou.core.data.parser.LawJsonParser
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
@@ -89,11 +90,14 @@ class LawRepositoryImpl @Inject constructor(
     override suspend fun getRandomArticle(lawIds: Set<LawId>, excludeSupplementaryProvisions: Boolean): Article? {
         if (lawIds.isEmpty()) return null
 
-        val codes = lawIds.flatMap { it.storedKeys() }
+        val lawIdKeys = lawIds.map { it.value }
+        val legacyKeys = lawIds.mapNotNull { PresetLaw.fromLawId(it)?.legacyCodeName }
         val entity = if (excludeSupplementaryProvisions) {
-            articleDao.getRandomByLawCodesExcludingSupplProvision(codes)
+            articleDao.getRandomByLawCodesExcludingSupplProvision(lawIdKeys)
+                ?: legacyKeys.takeIf { it.isNotEmpty() }?.let { articleDao.getRandomByLawCodesExcludingSupplProvision(it) }
         } else {
-            articleDao.getRandomByLawCodes(codes)
+            articleDao.getRandomByLawCodes(lawIdKeys)
+                ?: legacyKeys.takeIf { it.isNotEmpty() }?.let { articleDao.getRandomByLawCodes(it) }
         }
         if (entity != null) {
             return entity.toDomain()
@@ -147,15 +151,16 @@ class LawRepositoryImpl @Inject constructor(
 
     override fun observeLawMetadata(): Flow<Map<LawId, LawMetadata>> {
         return lawMetadataDao.observeAll().map { entities ->
-            entities.associate { entity ->
-                LawId(entity.lawCode) to LawMetadata(
+            entities.mapNotNull { entity ->
+                val lawId = entity.lawCode.toStoredLawIdOrNull() ?: return@mapNotNull null
+                lawId to LawMetadata(
                     lawNum = entity.lawNum,
                     promulgationDate = entity.promulgationDate,
                     lastAmendmentDate = entity.lastAmendmentDate,
                     lastAmendmentLawNum = entity.lastAmendmentLawNum,
                     lastRefreshedAt = entity.lastRefreshedAt,
                 )
-            }
+            }.toMap()
         }
     }
 

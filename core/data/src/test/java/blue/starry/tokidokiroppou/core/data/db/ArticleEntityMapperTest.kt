@@ -4,6 +4,7 @@ import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawId
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class ArticleEntityMapperTest {
     @Test
@@ -35,5 +36,18 @@ class ArticleEntityMapperTest {
         assertEquals("999AC0000000001", entity.lawCode)
         assertEquals(42, entity.orderIndex)
         assertEquals(LawId("999AC0000000001"), restored?.lawId)
+    }
+
+    @Test
+    fun toDomainReturnsNullForBlankLawCode() {
+        val entity = ArticleEntity(
+            lawCode = "",
+            articleNumber = "1",
+            articleTitle = "第1条",
+            articleCaption = "",
+            paragraphsJson = """[{"number":1,"text":"本文"}]""",
+        )
+
+        assertNull(entity.toDomain())
     }
 }

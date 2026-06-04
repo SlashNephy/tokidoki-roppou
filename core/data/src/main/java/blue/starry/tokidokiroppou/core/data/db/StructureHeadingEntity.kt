@@ -2,7 +2,6 @@ package blue.starry.tokidokiroppou.core.data.db
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 
 @Entity(tableName = "structure_headings")
@@ -25,10 +24,11 @@ fun StructureHeading.toEntity(): StructureHeadingEntity {
 }
 
 fun StructureHeadingEntity.toDomain(): StructureHeading? {
+    val lawId = lawCode.toStoredLawIdOrNull() ?: return null
     val headingLevel = runCatching { StructureHeading.Level.valueOf(level) }.getOrNull() ?: return null
 
     return StructureHeading(
-        lawId = LawId(lawCode),
+        lawId = lawId,
         title = title,
         level = headingLevel,
         orderIndex = orderIndex,
