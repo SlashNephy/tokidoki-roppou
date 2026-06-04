@@ -7,11 +7,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawId
+import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,13 +23,20 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
 ) : ApplicationSettingsRepository {
 
     override fun observe(): Flow<ApplicationSettings> {
-        return dataStore.data.map { preferences ->
-            preferences.toApplicationSettings()
-        }
+        return dataStore.data
+            .onEach { preferences ->
+                migrateEnabledLawIdsIfNeeded(preferences)
+            }
+            .map { preferences ->
+                preferences.toApplicationSettings()
+            }
     }
 
     override suspend fun get(): ApplicationSettings {
-        return dataStore.data.first().toApplicationSettings()
+        val preferences = dataStore.data.first()
+        migrateEnabledLawIdsIfNeeded(preferences)
+
+        return preferences.toApplicationSettings()
     }
 
     override suspend fun setNotificationIntervalMinutes(minutes: Int) {
@@ -42,14 +51,15 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean) {
+    override suspend fun setLawEnabled(lawId: LawId, enabled: Boolean) {
         dataStore.edit { preferences ->
             val current = preferences[KEY_ENABLED_LAW_CODES]
-                ?: ApplicationSettings.DEFAULT_ENABLED_LAW_CODES.map { it.name }.toSet()
+                ?.normalizeEnabledLawIds()
+                ?: PresetLaw.defaultNotificationLawIds.mapTo(mutableSetOf()) { it.value }
             preferences[KEY_ENABLED_LAW_CODES] = if (enabled) {
-                current + lawCode.name
+                current + lawId.value
             } else {
-                current - lawCode.name
+                current - lawId.value
             }
         }
     }
@@ -67,20 +77,40 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
     }
 
     private fun Preferences.toApplicationSettings(): ApplicationSettings {
-        val enabledCodes = this[KEY_ENABLED_LAW_CODES]
-            ?.mapNotNull { name ->
-                runCatching { LawCode.valueOf(name) }.getOrNull()
-            }
-            ?.toSet()
-            ?: ApplicationSettings.DEFAULT_ENABLED_LAW_CODES
+        val enabledLawIds = this[KEY_ENABLED_LAW_CODES]
+            ?.normalizeEnabledLawIds()
+            ?.mapTo(mutableSetOf()) { LawId(it) }
+            ?: PresetLaw.defaultNotificationLawIds
 
         return ApplicationSettings(
             notificationIntervalMinutes = this[KEY_NOTIFICATION_INTERVAL] ?: 60,
-            enabledLawCodes = enabledCodes,
+            enabledLawIds = enabledLawIds,
             isNotificationEnabled = this[KEY_NOTIFICATION_ENABLED] ?: true,
             useHalfWidthParentheses = this[KEY_USE_HALF_WIDTH_PARENTHESES] ?: false,
             excludeSupplementaryProvisions = this[KEY_EXCLUDE_SUPPLEMENTARY_PROVISIONS] ?: false,
         )
+    }
+
+    private suspend fun migrateEnabledLawIdsIfNeeded(preferences: Preferences) {
+        val current = preferences[KEY_ENABLED_LAW_CODES] ?: return
+        val normalized = current.normalizeEnabledLawIds()
+        if (current == normalized) {
+            return
+        }
+
+        dataStore.edit { mutablePreferences ->
+            val latest = mutablePreferences[KEY_ENABLED_LAW_CODES] ?: return@edit
+            val latestNormalized = latest.normalizeEnabledLawIds()
+            if (latest != latestNormalized) {
+                mutablePreferences[KEY_ENABLED_LAW_CODES] = latestNormalized
+            }
+        }
+    }
+
+    private fun Set<String>.normalizeEnabledLawIds(): Set<String> {
+        return mapTo(mutableSetOf()) { value ->
+            PresetLaw.fromLegacyCodeName(value)?.id?.value ?: value
+        }
     }
 
     companion object {
