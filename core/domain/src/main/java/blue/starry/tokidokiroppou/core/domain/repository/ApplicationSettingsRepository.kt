@@ -1,7 +1,7 @@
 package blue.starry.tokidokiroppou.core.domain.repository
 
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import kotlinx.coroutines.flow.Flow
 
 interface ApplicationSettingsRepository {
@@ -13,7 +13,7 @@ interface ApplicationSettingsRepository {
 
     suspend fun setNotificationEnabled(enabled: Boolean)
 
-    suspend fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean)
+    suspend fun setLawEnabled(lawId: LawId, enabled: Boolean)
 
     suspend fun setUseHalfWidthParentheses(enabled: Boolean)
 

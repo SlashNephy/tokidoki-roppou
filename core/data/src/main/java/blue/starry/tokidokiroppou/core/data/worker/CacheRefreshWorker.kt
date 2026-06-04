@@ -5,7 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -23,11 +23,13 @@ class CacheRefreshWorker @AssistedInject constructor(
         Timber.d("CacheRefreshWorker started")
 
         val settings = settingsRepository.get()
-        val lawCodes = settings.enabledLawCodes.ifEmpty { LawCode.entries.toSet() }
+        val enabledLawIds = settings.enabledLawIds.ifEmpty { PresetLaw.defaultNotificationLawIds }
+        val lawIdsNeedingRefresh = lawRepository.getLawIdsNeedingRefresh().toSet()
+        val lawIds = enabledLawIds.filter { it in lawIdsNeedingRefresh }
 
         var allSuccess = true
-        for (lawCode in lawCodes) {
-            if (!lawRepository.refreshLawCode(lawCode)) {
+        for (lawId in lawIds) {
+            if (!lawRepository.refreshLawId(lawId)) {
                 allSuccess = false
             }
         }
@@ -36,7 +38,7 @@ class CacheRefreshWorker @AssistedInject constructor(
             Timber.d("Cache refresh completed successfully")
             Result.success()
         } else {
-            Timber.w("Some law codes failed to refresh")
+            Timber.w("Some law IDs failed to refresh")
             Result.success() // 一部失敗しても次回に期待
         }
     }

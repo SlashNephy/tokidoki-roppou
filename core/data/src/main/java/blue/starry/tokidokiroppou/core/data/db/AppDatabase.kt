@@ -4,8 +4,14 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [ArticleEntity::class, LawMetadataEntity::class, BookmarkEntity::class, StructureHeadingEntity::class],
-    version = 9,
+    entities = [
+        ArticleEntity::class,
+        LawMetadataEntity::class,
+        BookmarkEntity::class,
+        StructureHeadingEntity::class,
+        LawEntity::class,
+    ],
+    version = 10,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -13,4 +19,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun lawMetadataDao(): LawMetadataDao
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun structureHeadingDao(): StructureHeadingDao
+    abstract fun lawDao(): LawDao
 }

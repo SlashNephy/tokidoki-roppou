@@ -4,6 +4,7 @@ import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheDao
 import blue.starry.tokidokiroppou.core.ai.db.ExplanationCacheEntity
 import blue.starry.tokidokiroppou.core.ai.di.AiConstants
 import blue.starry.tokidokiroppou.core.domain.model.Article
+import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import com.google.firebase.ai.GenerativeModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -22,7 +23,7 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
         // キャッシュを確認 (7日間有効)
         if (!forceRefresh) {
             val cached = cacheDao.get(
-                lawCode = article.lawCode.name,
+                lawCode = article.lawId.value,
                 articleNumber = article.articleNumber,
                 supplementaryProvisionLabel = article.supplementaryProvisionLabel ?: "",
                 modelName = modelName,
@@ -48,7 +49,7 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
         if (accumulated.isNotEmpty()) {
             cacheDao.upsert(
                 ExplanationCacheEntity(
-                    lawCode = article.lawCode.name,
+                    lawCode = article.lawId.value,
                     articleNumber = article.articleNumber,
                     supplementaryProvisionLabel = article.supplementaryProvisionLabel ?: "",
                     modelName = modelName,
@@ -69,7 +70,7 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
         appendLine("テキストは Markdown 記法で出力し、重要な箇所には太字を使用してください。")
         appendLine()
         appendLine("【条文】")
-        appendLine("${article.lawCode.displayName} ${article.displayTitle}")
+        appendLine("${article.lawDisplayName} ${article.displayTitle}")
         append(article.fullText)
     }
 
@@ -78,3 +79,6 @@ class ArticleExplanationRepositoryImpl @Inject constructor(
         private const val CACHE_TTL_MS = 7L * 24 * 60 * 60 * 1000
     }
 }
+
+private val Article.lawDisplayName: String
+    get() = PresetLaw.fromLawId(lawId)?.displayName ?: lawId.value

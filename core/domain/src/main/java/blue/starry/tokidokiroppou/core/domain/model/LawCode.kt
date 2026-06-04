@@ -177,4 +177,13 @@ enum class LawCode(
         displayName = "道路交通法",
         category = LawCategory.OTHERS,
     ),
+    ;
+
+    companion object {
+        fun fromStoredValue(value: String): LawCode? {
+            return entries.firstOrNull { lawCode ->
+                lawCode.name == value || lawCode.lawId == value
+            }
+        }
+    }
 }

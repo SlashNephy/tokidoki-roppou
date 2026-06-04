@@ -56,6 +56,7 @@ private const val EGOV_LAW_URL_BASE = "https://laws.e-gov.go.jp/law/"
 fun ArticleCard(
     article: Article,
     modifier: Modifier = Modifier,
+    lawDisplayName: String = article.lawId.value,
     useHalfWidthParentheses: Boolean = false,
     annotatedArticleText: AnnotatedArticleText? = null,
     onReferenceClick: ((String) -> Unit)? = null,
@@ -83,7 +84,7 @@ fun ArticleCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = article.lawCode.displayName,
+                        text = lawDisplayName,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
@@ -167,7 +168,7 @@ fun ArticleCard(
                                     },
                                     onClick = {
                                         menuExpanded = false
-                                        uriHandler.openUri("$EGOV_LAW_URL_BASE${article.lawCode.lawId}")
+                                        uriHandler.openUri("$EGOV_LAW_URL_BASE${article.lawId.value}")
                                     },
                                 )
                             }

@@ -145,6 +145,7 @@ fun HomeScreen(
 
                     ArticleCard(
                         article = state.article,
+                        lawDisplayName = state.lawDisplayNames[state.article.lawId] ?: state.article.lawId.value,
                         useHalfWidthParentheses = state.useHalfWidthParentheses,
                         annotatedArticleText = annotatedArticleText,
                         onReferenceClick = { articleNumber ->
@@ -191,6 +192,7 @@ fun HomeScreen(
 
                             ArticleCard(
                                 article = related,
+                                lawDisplayName = state.lawDisplayNames[related.lawId] ?: related.lawId.value,
                                 useHalfWidthParentheses = state.useHalfWidthParentheses,
                                 isBookmarked = relatedBookmarked,
                                 onBookmarkClick = { viewModel.toggleBookmarkForArticle(related) },

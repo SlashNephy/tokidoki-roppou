@@ -5,14 +5,22 @@ import androidx.lifecycle.viewModelScope
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.worker.ArticleNotificationScheduler
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
+import blue.starry.tokidokiroppou.core.domain.model.Law
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
+import blue.starry.tokidokiroppou.core.domain.repository.LawCatalogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,6 +29,7 @@ import javax.inject.Inject
 class SettingsScreenViewModel @Inject constructor(
     private val settingsRepository: ApplicationSettingsRepository,
     private val lawRepository: LawRepositoryImpl,
+    private val lawCatalogRepository: LawCatalogRepository,
     private val scheduler: ArticleNotificationScheduler,
 ) : ViewModel() {
 
@@ -32,11 +41,59 @@ class SettingsScreenViewModel @Inject constructor(
         )
 
     val lawMetadata: StateFlow<Map<LawCode, LawMetadata>> = lawRepository.observeLawMetadata()
+        .map { metadata ->
+            LawCode.entries.mapNotNull { lawCode ->
+                val lawMetadata = metadata[LawId(lawCode.lawId)] ?: return@mapNotNull null
+                lawCode to lawMetadata
+            }.toMap()
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyMap(),
         )
+
+    private val knownLaws: StateFlow<List<Law>> = lawCatalogRepository.observeLaws()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList(),
+        )
+
+    val addedLaws: StateFlow<List<Law>> = knownLaws
+        .map { laws ->
+            laws.filter { it.isAdded && !it.isPreset }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList(),
+        )
+
+    private val rawCatalogSearchResults = MutableStateFlow<List<Law>>(emptyList())
+
+    val catalogSearchResults: StateFlow<List<Law>> = combine(rawCatalogSearchResults, knownLaws) { results, laws ->
+        val addedLawIds = laws
+            .filter { it.isAdded || it.isPreset }
+            .mapTo(mutableSetOf()) { it.id }
+
+        results.map { law ->
+            law.copy(isAdded = law.id in addedLawIds)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList(),
+    )
+
+    private val _isCatalogSearching = MutableStateFlow(false)
+    val isCatalogSearching: StateFlow<Boolean> = _isCatalogSearching.asStateFlow()
+
+    private val _catalogSearchError = MutableStateFlow<String?>(null)
+    val catalogSearchError: StateFlow<String?> = _catalogSearchError.asStateFlow()
+
+    private var catalogSearchJob: Job? = null
+    private var catalogSearchGeneration = 0
 
     init {
         refreshStaleData()
@@ -44,13 +101,13 @@ class SettingsScreenViewModel @Inject constructor(
 
     private fun refreshStaleData() {
         viewModelScope.launch {
-            val enabledCodes = settingsRepository.get().enabledLawCodes
-            val needsRefresh = lawRepository.getLawCodesNeedingRefresh()
-                .filter { it in enabledCodes }
+            val enabledLawIds = settingsRepository.get().enabledLawIds
+            val needsRefresh = lawRepository.getLawIdsNeedingRefresh()
+                .filter { it in enabledLawIds }
             if (needsRefresh.isEmpty()) return@launch
 
-            for (lawCode in needsRefresh) {
-                lawRepository.refreshLawCode(lawCode)
+            for (lawId in needsRefresh) {
+                lawRepository.refreshLawId(lawId)
             }
         }
     }
@@ -78,10 +135,14 @@ class SettingsScreenViewModel @Inject constructor(
     }
 
     fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean) {
+        setLawEnabled(LawId(lawCode.lawId), enabled)
+    }
+
+    fun setLawEnabled(lawId: LawId, enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepository.setLawCodeEnabled(lawCode, enabled)
+            settingsRepository.setLawEnabled(lawId, enabled)
             if (enabled) {
-                lawRepository.refreshLawCode(lawCode)
+                lawRepository.refreshLawId(lawId)
             }
         }
     }
@@ -105,11 +166,59 @@ class SettingsScreenViewModel @Inject constructor(
         viewModelScope.launch {
             _isRefreshing.value = true
             lawRepository.clearCache()
-            val enabledCodes = settingsRepository.get().enabledLawCodes
-            for (lawCode in enabledCodes) {
-                lawRepository.refreshLawCode(lawCode)
+            val enabledLawIds = settingsRepository.get().enabledLawIds
+            for (lawId in enabledLawIds) {
+                lawRepository.refreshLawId(lawId)
             }
             _isRefreshing.value = false
         }
+    }
+
+    fun searchCatalog(query: String) {
+        val trimmedQuery = query.trim()
+        val generation = ++catalogSearchGeneration
+        catalogSearchJob?.cancel()
+        _catalogSearchError.value = null
+
+        if (trimmedQuery.isBlank()) {
+            rawCatalogSearchResults.value = emptyList()
+            _isCatalogSearching.value = false
+            return
+        }
+
+        rawCatalogSearchResults.value = emptyList()
+        _isCatalogSearching.value = true
+
+        catalogSearchJob = viewModelScope.launch {
+            delay(CATALOG_SEARCH_DEBOUNCE_MILLIS)
+            try {
+                val results = lawCatalogRepository.searchEGovLaws(trimmedQuery)
+                if (generation == catalogSearchGeneration) {
+                    rawCatalogSearchResults.value = results
+                }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                if (generation == catalogSearchGeneration) {
+                    rawCatalogSearchResults.value = emptyList()
+                    _catalogSearchError.value = "e-Gov 法令検索に失敗しました"
+                }
+            } finally {
+                if (generation == catalogSearchGeneration) {
+                    _isCatalogSearching.value = false
+                }
+            }
+        }
+    }
+
+    fun addLawForNotifications(law: Law) {
+        viewModelScope.launch {
+            lawCatalogRepository.addLaw(law, enableNotification = true)
+            lawRepository.refreshLawId(law.id)
+        }
+    }
+
+    private companion object {
+        const val CATALOG_SEARCH_DEBOUNCE_MILLIS = 300L
     }
 }

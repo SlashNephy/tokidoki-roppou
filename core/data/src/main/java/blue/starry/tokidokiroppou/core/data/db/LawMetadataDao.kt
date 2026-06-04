@@ -23,6 +23,9 @@ interface LawMetadataDao {
     @Query("DELETE FROM law_metadata")
     suspend fun deleteAll()
 
+    @Query("DELETE FROM law_metadata WHERE lawCode = :lawCode")
+    suspend fun deleteByLawCode(lawCode: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: LawMetadataEntity)
 }

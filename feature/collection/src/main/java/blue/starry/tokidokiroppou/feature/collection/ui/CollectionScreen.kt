@@ -87,17 +87,18 @@ fun CollectionScreen(
             ) {
                 items(
                     items = state.articles,
-                    key = { "${it.lawCode.name}_${it.articleNumber}_${it.supplementaryProvisionLabel ?: ""}" },
+                    key = { "${it.lawId.value}_${it.articleNumber}_${it.supplementaryProvisionLabel ?: ""}" },
                 ) { article ->
                     ArticleCard(
                         article = article,
+                        lawDisplayName = state.lawDisplayNames[article.lawId] ?: article.lawId.value,
                         useHalfWidthParentheses = state.useHalfWidthParentheses,
                         isBookmarked = true,
                         onBookmarkClick = { viewModel.removeBookmark(article) },
                         onExplainClick = { explanationViewModel.explainArticle(article) },
                         modifier = Modifier.clickable {
                             onArticleClick(
-                                article.lawCode.name,
+                                article.lawId.value,
                                 article.articleNumber,
                                 article.supplementaryProvisionLabel,
                             )

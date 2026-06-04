@@ -1,7 +1,6 @@
 package blue.starry.tokidokiroppou.core.data.db
 
 import blue.starry.tokidokiroppou.core.domain.model.Article
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -18,7 +17,7 @@ fun Article.toEntity(orderIndex: Int = 0): ArticleEntity {
         paragraphs.map { ParagraphJson(it.number, it.text) }
     )
     return ArticleEntity(
-        lawCode = lawCode.name,
+        lawCode = lawId.value,
         articleNumber = articleNumber,
         articleTitle = articleTitle,
         articleCaption = articleCaption,
@@ -29,13 +28,13 @@ fun Article.toEntity(orderIndex: Int = 0): ArticleEntity {
 }
 
 fun ArticleEntity.toDomain(): Article? {
-    val lawCode = runCatching { LawCode.valueOf(lawCode) }.getOrNull() ?: return null
+    val lawId = lawCode.toStoredLawIdOrNull() ?: return null
     val paragraphs = runCatching {
         json.decodeFromString<List<ParagraphJson>>(paragraphsJson)
     }.getOrNull() ?: return null
 
     return Article(
-        lawCode = lawCode,
+        lawId = lawId,
         articleNumber = articleNumber,
         articleTitle = articleTitle,
         articleCaption = articleCaption,

@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import blue.starry.tokidokiroppou.core.data.notification.ArticleNotificationSender
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
+import blue.starry.tokidokiroppou.core.domain.repository.LawCatalogRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -16,6 +17,7 @@ class ArticleNotificationWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val lawRepository: LawRepository,
+    private val lawCatalogRepository: LawCatalogRepository,
     private val settingsRepository: ApplicationSettingsRepository,
     private val notificationSender: ArticleNotificationSender,
 ) : CoroutineWorker(appContext, workerParams) {
@@ -29,13 +31,14 @@ class ArticleNotificationWorker @AssistedInject constructor(
             return Result.success()
         }
 
-        val article = lawRepository.getRandomArticle(settings.enabledLawCodes, settings.excludeSupplementaryProvisions)
+        val article = lawRepository.getRandomArticle(settings.enabledLawIds, settings.excludeSupplementaryProvisions)
         if (article == null) {
             Timber.w("No article found")
             return Result.retry()
         }
 
-        notificationSender.sendArticleNotification(article, settings.useHalfWidthParentheses)
+        val lawDisplayName = lawCatalogRepository.getLaw(article.lawId)?.displayName ?: article.lawId.value
+        notificationSender.sendArticleNotification(article, lawDisplayName, settings.useHalfWidthParentheses)
         return Result.success()
     }
 

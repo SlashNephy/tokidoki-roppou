@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -29,19 +29,19 @@ class BookmarkActionReceiver : BroadcastReceiver() {
             return
         }
 
-        val lawCode = intent.getStringExtra(EXTRA_LAW_CODE) ?: return
-        val articleNumber = intent.getStringExtra(EXTRA_ARTICLE_NUMBER) ?: return
+        val lawIdValue = intent.getNonBlankStringExtra(EXTRA_LAW_CODE) ?: return
+        val articleNumber = intent.getNonBlankStringExtra(EXTRA_ARTICLE_NUMBER) ?: return
         val supplementaryProvisionLabel = intent.getStringExtra(EXTRA_SUPPLEMENTARY_PROVISION_LABEL) ?: ""
 
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 bookmarkRepository.add(
-                    LawCode.valueOf(lawCode),
+                    LawId(lawIdValue),
                     articleNumber,
                     supplementaryProvisionLabel.ifEmpty { null },
                 )
-                Timber.d("条文をブックマークに保存: %s %s", lawCode, articleNumber)
+                Timber.d("条文をブックマークに保存: %s %s", lawIdValue, articleNumber)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "条文を保存しました", Toast.LENGTH_SHORT).show()
                 }
@@ -59,4 +59,8 @@ class BookmarkActionReceiver : BroadcastReceiver() {
         const val EXTRA_ARTICLE_NUMBER = "extra_bookmark_article_number"
         const val EXTRA_SUPPLEMENTARY_PROVISION_LABEL = "extra_bookmark_supplementary_provision_label"
     }
+}
+
+private fun Intent.getNonBlankStringExtra(name: String): String? {
+    return getStringExtra(name)?.takeUnless { it.isBlank() }
 }

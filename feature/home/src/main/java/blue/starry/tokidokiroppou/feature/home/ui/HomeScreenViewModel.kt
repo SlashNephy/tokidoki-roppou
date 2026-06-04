@@ -3,10 +3,11 @@ package blue.starry.tokidokiroppou.feature.home.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import blue.starry.tokidokiroppou.core.domain.model.Article
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
+import blue.starry.tokidokiroppou.core.domain.repository.LawCatalogRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,11 +23,12 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
     private val lawRepository: LawRepository,
+    private val lawCatalogRepository: LawCatalogRepository,
     private val settingsRepository: ApplicationSettingsRepository,
     private val bookmarkRepository: BookmarkRepository,
 ) : ViewModel() {
     data class ArticleNavigationTarget(
-        val lawCode: String,
+        val lawId: String,
         val articleNumber: String,
         val supplementaryProvisionLabel: String? = null,
     )
@@ -38,7 +40,7 @@ class HomeScreenViewModel @Inject constructor(
     val isBookmarked: StateFlow<Boolean> = _uiState.flatMapLatest { state ->
         if (state is HomeUiState.Loaded) {
             bookmarkRepository.observeIsBookmarked(
-                state.article.lawCode,
+                state.article.lawId,
                 state.article.articleNumber,
                 state.article.supplementaryProvisionLabel,
             )
@@ -55,7 +57,7 @@ class HomeScreenViewModel @Inject constructor(
     fun toggleBookmarkForArticle(article: Article) {
         viewModelScope.launch {
             bookmarkRepository.toggle(
-                article.lawCode,
+                article.lawId,
                 article.articleNumber,
                 article.supplementaryProvisionLabel,
             )
@@ -63,7 +65,7 @@ class HomeScreenViewModel @Inject constructor(
     }
 
     fun observeIsBookmarked(article: Article) = bookmarkRepository.observeIsBookmarked(
-        article.lawCode,
+        article.lawId,
         article.articleNumber,
         article.supplementaryProvisionLabel,
     )
@@ -81,20 +83,22 @@ class HomeScreenViewModel @Inject constructor(
             _uiState.value = HomeUiState.Loading
 
             val settings = settingsRepository.get()
-            if (settings.enabledLawCodes.isEmpty()) {
+            if (settings.enabledLawIds.isEmpty()) {
                 _uiState.value = HomeUiState.NoLawSelected
                 return@launch
             }
 
-            val article = lawRepository.getRandomArticle(settings.enabledLawCodes, settings.excludeSupplementaryProvisions)
+            val article = lawRepository.getRandomArticle(settings.enabledLawIds, settings.excludeSupplementaryProvisions)
 
             if (article != null) {
                 val related = lawRepository.getRelatedArticles(article)
-                val metadata = lawRepository.getLawMetadata(article.lawCode)
+                val metadata = lawRepository.getLawMetadata(article.lawId)
+                val lawDisplayNames = buildLawDisplayNames(listOf(article) + related)
                 val navigation = buildNavigationTargets(article)
                 _uiState.value = HomeUiState.Loaded(
                     article = article,
                     relatedArticles = related,
+                    lawDisplayNames = lawDisplayNames,
                     lawMetadata = metadata,
                     useHalfWidthParentheses = settings.useHalfWidthParentheses,
                     previousArticle = navigation.first,
@@ -106,21 +110,23 @@ class HomeScreenViewModel @Inject constructor(
         }
     }
 
-    private fun loadSpecificArticle(lawCodeName: String, articleNumber: String, supplementaryProvisionLabel: String? = null) {
+    private fun loadSpecificArticle(lawIdValue: String, articleNumber: String, supplementaryProvisionLabel: String? = null) {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
 
             val settings = settingsRepository.get()
-            val lawCode = runCatching { LawCode.valueOf(lawCodeName) }.getOrNull()
-            val article = lawCode?.let { lawRepository.getArticle(it, articleNumber, supplementaryProvisionLabel) }
+            val lawId = runCatching { LawId(lawIdValue) }.getOrNull()
+            val article = lawId?.let { lawRepository.getArticle(it, articleNumber, supplementaryProvisionLabel) }
 
             if (article != null) {
                 val related = lawRepository.getRelatedArticles(article)
-                val metadata = lawRepository.getLawMetadata(article.lawCode)
+                val metadata = lawRepository.getLawMetadata(article.lawId)
+                val lawDisplayNames = buildLawDisplayNames(listOf(article) + related)
                 val navigation = buildNavigationTargets(article)
                 _uiState.value = HomeUiState.Loaded(
                     article = article,
                     relatedArticles = related,
+                    lawDisplayNames = lawDisplayNames,
                     lawMetadata = metadata,
                     useHalfWidthParentheses = settings.useHalfWidthParentheses,
                     previousArticle = navigation.first,
@@ -133,23 +139,29 @@ class HomeScreenViewModel @Inject constructor(
     }
 
     fun navigateTo(target: ArticleNavigationTarget) {
-        loadSpecificArticle(target.lawCode, target.articleNumber, target.supplementaryProvisionLabel)
+        loadSpecificArticle(target.lawId, target.articleNumber, target.supplementaryProvisionLabel)
     }
 
     private suspend fun buildNavigationTargets(article: Article): Pair<ArticleNavigationTarget?, ArticleNavigationTarget?> {
-        val articles = lawRepository.getArticles(article.lawCode)
+        val articles = lawRepository.getArticles(article.lawId)
         val index = articles.indexOfFirst {
             it.articleNumber == article.articleNumber &&
                 it.supplementaryProvisionLabel == article.supplementaryProvisionLabel
         }
         if (index == -1) return null to null
         val previous = articles.getOrNull(index - 1)?.let {
-            ArticleNavigationTarget(it.lawCode.name, it.articleNumber, it.supplementaryProvisionLabel)
+            ArticleNavigationTarget(it.lawId.value, it.articleNumber, it.supplementaryProvisionLabel)
         }
         val next = articles.getOrNull(index + 1)?.let {
-            ArticleNavigationTarget(it.lawCode.name, it.articleNumber, it.supplementaryProvisionLabel)
+            ArticleNavigationTarget(it.lawId.value, it.articleNumber, it.supplementaryProvisionLabel)
         }
         return previous to next
+    }
+
+    private suspend fun buildLawDisplayNames(articles: List<Article>): Map<LawId, String> {
+        return articles.map { it.lawId }.distinct().associateWith { lawId ->
+            lawCatalogRepository.getLaw(lawId)?.displayName ?: lawId.value
+        }
     }
 }
 
@@ -158,6 +170,7 @@ sealed interface HomeUiState {
     data class Loaded(
         val article: Article,
         val relatedArticles: List<Article>,
+        val lawDisplayNames: Map<LawId, String>,
         val lawMetadata: LawMetadata?,
         val useHalfWidthParentheses: Boolean,
         val previousArticle: HomeScreenViewModel.ArticleNavigationTarget?,
