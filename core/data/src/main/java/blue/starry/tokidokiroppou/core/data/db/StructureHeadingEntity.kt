@@ -17,7 +17,7 @@ data class StructureHeadingEntity(
 
 fun StructureHeading.toEntity(): StructureHeadingEntity {
     return StructureHeadingEntity(
-        lawCode = lawCode.name,
+        lawCode = lawCode.lawId,
         title = title,
         level = level.name,
         orderIndex = orderIndex,
@@ -25,7 +25,7 @@ fun StructureHeading.toEntity(): StructureHeadingEntity {
 }
 
 fun StructureHeadingEntity.toDomain(): StructureHeading? {
-    val code = runCatching { LawCode.valueOf(lawCode) }.getOrNull() ?: return null
+    val code = LawCode.fromStoredValue(lawCode) ?: return null
     val headingLevel = runCatching { StructureHeading.Level.valueOf(level) }.getOrNull() ?: return null
 
     return StructureHeading(

@@ -76,6 +76,10 @@ class Migration9To10Test {
             val normalizedSql = sql.trim().replace(Regex("\\s+"), " ")
             when {
                 normalizedSql.startsWith("CREATE TABLE IF NOT EXISTS laws", ignoreCase = true) -> {
+                    assertEquals(
+                        "CREATE TABLE IF NOT EXISTS laws ( lawId TEXT NOT NULL, displayName TEXT NOT NULL, lawNum TEXT, category TEXT NOT NULL, addedAt INTEGER NOT NULL, PRIMARY KEY(lawId) )",
+                        normalizedSql,
+                    )
                     tables["laws"] = mutableListOf()
                 }
 

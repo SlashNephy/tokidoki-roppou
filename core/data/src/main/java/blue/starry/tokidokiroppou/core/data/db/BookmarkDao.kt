@@ -15,14 +15,23 @@ interface BookmarkDao {
     @Query("SELECT COUNT(*) > 0 FROM bookmarks WHERE lawCode = :lawCode AND articleNumber = :articleNumber AND supplementaryProvisionLabel = :supplementaryProvisionLabel")
     fun observeIsBookmarked(lawCode: String, articleNumber: String, supplementaryProvisionLabel: String): Flow<Boolean>
 
+    @Query("SELECT COUNT(*) > 0 FROM bookmarks WHERE lawCode IN (:lawCodes) AND articleNumber = :articleNumber AND supplementaryProvisionLabel = :supplementaryProvisionLabel")
+    fun observeIsBookmarked(lawCodes: List<String>, articleNumber: String, supplementaryProvisionLabel: String): Flow<Boolean>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(bookmark: BookmarkEntity)
 
     @Query("DELETE FROM bookmarks WHERE lawCode = :lawCode AND articleNumber = :articleNumber AND supplementaryProvisionLabel = :supplementaryProvisionLabel")
     suspend fun delete(lawCode: String, articleNumber: String, supplementaryProvisionLabel: String)
 
+    @Query("DELETE FROM bookmarks WHERE lawCode IN (:lawCodes) AND articleNumber = :articleNumber AND supplementaryProvisionLabel = :supplementaryProvisionLabel")
+    suspend fun delete(lawCodes: List<String>, articleNumber: String, supplementaryProvisionLabel: String)
+
     @Query("SELECT COUNT(*) > 0 FROM bookmarks WHERE lawCode = :lawCode AND articleNumber = :articleNumber AND supplementaryProvisionLabel = :supplementaryProvisionLabel")
     suspend fun isBookmarked(lawCode: String, articleNumber: String, supplementaryProvisionLabel: String): Boolean
+
+    @Query("SELECT COUNT(*) > 0 FROM bookmarks WHERE lawCode IN (:lawCodes) AND articleNumber = :articleNumber AND supplementaryProvisionLabel = :supplementaryProvisionLabel")
+    suspend fun isBookmarked(lawCodes: List<String>, articleNumber: String, supplementaryProvisionLabel: String): Boolean
 
     @Transaction
     suspend fun toggle(lawCode: String, articleNumber: String, supplementaryProvisionLabel: String) {
@@ -32,6 +41,21 @@ interface BookmarkDao {
             insert(
                 BookmarkEntity(
                     lawCode = lawCode,
+                    articleNumber = articleNumber,
+                    supplementaryProvisionLabel = supplementaryProvisionLabel,
+                ),
+            )
+        }
+    }
+
+    @Transaction
+    suspend fun toggle(lawCodes: List<String>, articleNumber: String, supplementaryProvisionLabel: String) {
+        if (isBookmarked(lawCodes, articleNumber, supplementaryProvisionLabel)) {
+            delete(lawCodes, articleNumber, supplementaryProvisionLabel)
+        } else {
+            insert(
+                BookmarkEntity(
+                    lawCode = lawCodes.first(),
                     articleNumber = articleNumber,
                     supplementaryProvisionLabel = supplementaryProvisionLabel,
                 ),

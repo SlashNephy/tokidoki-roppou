@@ -30,7 +30,7 @@ class BookmarkRepositoryImpl @Inject constructor(
         supplementaryProvisionLabel: String?,
     ): Flow<Boolean> {
         return bookmarkDao.observeIsBookmarked(
-            lawCode.name,
+            lawCode.storedKeys(),
             articleNumber,
             supplementaryProvisionLabel ?: "",
         )
@@ -43,7 +43,7 @@ class BookmarkRepositoryImpl @Inject constructor(
     ) {
         bookmarkDao.insert(
             BookmarkEntity(
-                lawCode = lawCode.name,
+                lawCode = lawCode.lawId,
                 articleNumber = articleNumber,
                 supplementaryProvisionLabel = supplementaryProvisionLabel ?: "",
             ),
@@ -56,7 +56,7 @@ class BookmarkRepositoryImpl @Inject constructor(
         supplementaryProvisionLabel: String?,
     ) {
         bookmarkDao.delete(
-            lawCode.name,
+            lawCode.storedKeys(),
             articleNumber,
             supplementaryProvisionLabel ?: "",
         )
@@ -67,6 +67,10 @@ class BookmarkRepositoryImpl @Inject constructor(
         articleNumber: String,
         supplementaryProvisionLabel: String?,
     ) {
-        bookmarkDao.toggle(lawCode.name, articleNumber, supplementaryProvisionLabel ?: "")
+        bookmarkDao.toggle(lawCode.storedKeys(), articleNumber, supplementaryProvisionLabel ?: "")
+    }
+
+    private fun LawCode.storedKeys(): List<String> {
+        return listOf(lawId, name)
     }
 }

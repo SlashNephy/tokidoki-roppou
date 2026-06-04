@@ -18,7 +18,7 @@ fun Article.toEntity(orderIndex: Int = 0): ArticleEntity {
         paragraphs.map { ParagraphJson(it.number, it.text) }
     )
     return ArticleEntity(
-        lawCode = lawCode.name,
+        lawCode = lawCode.lawId,
         articleNumber = articleNumber,
         articleTitle = articleTitle,
         articleCaption = articleCaption,
@@ -29,7 +29,7 @@ fun Article.toEntity(orderIndex: Int = 0): ArticleEntity {
 }
 
 fun ArticleEntity.toDomain(): Article? {
-    val lawCode = runCatching { LawCode.valueOf(lawCode) }.getOrNull() ?: return null
+    val lawCode = LawCode.fromStoredValue(lawCode) ?: return null
     val paragraphs = runCatching {
         json.decodeFromString<List<ParagraphJson>>(paragraphsJson)
     }.getOrNull() ?: return null
