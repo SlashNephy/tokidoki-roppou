@@ -3,6 +3,7 @@ package blue.starry.tokidokiroppou.feature.laws.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import blue.starry.tokidokiroppou.core.domain.model.Article
+import blue.starry.tokidokiroppou.core.domain.model.Law
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
@@ -10,13 +11,17 @@ import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
+import blue.starry.tokidokiroppou.core.domain.repository.LawCatalogRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -26,6 +31,7 @@ import javax.inject.Inject
 @HiltViewModel
 class LawsScreenViewModel @Inject constructor(
     private val lawRepository: LawRepository,
+    private val lawCatalogRepository: LawCatalogRepository,
     private val settingsRepository: ApplicationSettingsRepository,
 ) : ViewModel() {
 
@@ -63,6 +69,30 @@ class LawsScreenViewModel @Inject constructor(
 
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
+
+    private val knownLaws: StateFlow<List<Law>> = lawCatalogRepository.observeLaws()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val rawCatalogSearchResults = MutableStateFlow<List<Law>>(emptyList())
+
+    val catalogSearchResults: StateFlow<List<Law>> = combine(rawCatalogSearchResults, knownLaws) { results, laws ->
+        val addedLawIds = laws
+            .filter { it.isAdded || it.isPreset }
+            .mapTo(mutableSetOf()) { it.id }
+
+        results.map { law ->
+            law.copy(isAdded = law.id in addedLawIds)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _isCatalogSearching = MutableStateFlow(false)
+    val isCatalogSearching: StateFlow<Boolean> = _isCatalogSearching.asStateFlow()
+
+    private val _catalogSearchError = MutableStateFlow<String?>(null)
+    val catalogSearchError: StateFlow<String?> = _catalogSearchError.asStateFlow()
+
+    private var catalogSearchJob: Job? = null
+    private var catalogSearchGeneration = 0
 
     init {
         viewModelScope.launch {
@@ -122,6 +152,47 @@ class LawsScreenViewModel @Inject constructor(
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    fun searchCatalog(query: String) {
+        val trimmedQuery = query.trim()
+        catalogSearchJob?.cancel()
+        _catalogSearchError.value = null
+
+        if (trimmedQuery.isBlank()) {
+            catalogSearchGeneration++
+            rawCatalogSearchResults.value = emptyList()
+            _isCatalogSearching.value = false
+            return
+        }
+
+        val generation = ++catalogSearchGeneration
+        catalogSearchJob = viewModelScope.launch {
+            _isCatalogSearching.value = true
+            try {
+                val results = lawCatalogRepository.searchEGovLaws(trimmedQuery)
+                if (generation == catalogSearchGeneration) {
+                    rawCatalogSearchResults.value = results
+                }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                if (generation == catalogSearchGeneration) {
+                    rawCatalogSearchResults.value = emptyList()
+                    _catalogSearchError.value = exception.message ?: "e-Gov law search failed."
+                }
+            } finally {
+                if (generation == catalogSearchGeneration) {
+                    _isCatalogSearching.value = false
+                }
+            }
+        }
+    }
+
+    fun addLawForBrowsing(law: Law) {
+        viewModelScope.launch {
+            lawCatalogRepository.addLaw(law, enableNotification = false)
+        }
     }
 
     fun getFilteredLawCodes(category: LawCategory): List<LawCode> {
