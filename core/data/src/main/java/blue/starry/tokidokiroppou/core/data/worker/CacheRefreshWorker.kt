@@ -23,7 +23,9 @@ class CacheRefreshWorker @AssistedInject constructor(
         Timber.d("CacheRefreshWorker started")
 
         val settings = settingsRepository.get()
-        val lawIds = settings.enabledLawIds.ifEmpty { PresetLaw.defaultNotificationLawIds }
+        val enabledLawIds = settings.enabledLawIds.ifEmpty { PresetLaw.defaultNotificationLawIds }
+        val lawIdsNeedingRefresh = lawRepository.getLawIdsNeedingRefresh().toSet()
+        val lawIds = enabledLawIds.filter { it in lawIdsNeedingRefresh }
 
         var allSuccess = true
         for (lawId in lawIds) {
@@ -36,7 +38,7 @@ class CacheRefreshWorker @AssistedInject constructor(
             Timber.d("Cache refresh completed successfully")
             Result.success()
         } else {
-            Timber.w("Some law codes failed to refresh")
+            Timber.w("Some law IDs failed to refresh")
             Result.success() // 一部失敗しても次回に期待
         }
     }

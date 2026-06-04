@@ -73,12 +73,12 @@ fun App() {
     // コールドスタート: Intent から初期ルートを決定 (バックスタック構築前に読み取る)
     val startRoute = remember {
         val intent = activity?.intent
-        val lawCode = intent?.getStringExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
+        val lawId = intent?.getStringExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
         val articleNumber = intent?.getStringExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
-        if (lawCode != null && articleNumber != null) {
+        if (lawId != null && articleNumber != null) {
             intent.removeExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
             intent.removeExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
-            HomeRoute(lawCode, articleNumber)
+            HomeRoute(lawId, articleNumber)
         } else {
             HomeRoute()
         }
@@ -89,7 +89,7 @@ fun App() {
     // ウォームスタート: アプリが既に起動中に通知をタップした場合
     DisposableEffect(activity) {
         val listener = Consumer<Intent> { intent ->
-            val lawCode = intent.getStringExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
+            val lawId = intent.getStringExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
                 ?: return@Consumer
             val articleNumber = intent.getStringExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
                 ?: return@Consumer
@@ -97,7 +97,7 @@ fun App() {
             intent.removeExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
             // バックスタックをクリアしてホーム画面に遷移
             backStack.clear()
-            backStack.add(HomeRoute(lawCode, articleNumber))
+            backStack.add(HomeRoute(lawId, articleNumber))
         }
         activity?.addOnNewIntentListener(listener)
         onDispose {
@@ -209,7 +209,7 @@ fun App() {
                     LawsScreen(
                         onArticleClick = { lawCode, articleNumber, supplementaryProvisionLabel ->
                             // 条文クリック: 法令一覧をスタックに残して条文詳細画面に遷移
-                            backStack.add(HomeRoute(lawCode.name, articleNumber, supplementaryProvisionLabel))
+                            backStack.add(HomeRoute(lawCode.lawId, articleNumber, supplementaryProvisionLabel))
                         },
                     )
                 }

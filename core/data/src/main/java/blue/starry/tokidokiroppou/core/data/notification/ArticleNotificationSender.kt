@@ -14,7 +14,6 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import blue.starry.tokidokiroppou.core.data.R
 import blue.starry.tokidokiroppou.core.domain.model.Article
-import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import javax.inject.Inject
@@ -39,7 +38,11 @@ class ArticleNotificationSender @Inject constructor(
     }
 
     @SuppressLint("MissingPermission")
-    fun sendArticleNotification(article: Article, useHalfWidthParentheses: Boolean = false) {
+    fun sendArticleNotification(
+        article: Article,
+        lawDisplayName: String,
+        useHalfWidthParentheses: Boolean = false,
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     context,
@@ -57,8 +60,8 @@ class ArticleNotificationSender @Inject constructor(
 
         val contentIntent = createContentIntent(article)
 
-        val copyIntent = createCopyIntent(article, useHalfWidthParentheses)
-        val shareIntent = createShareIntent(article, useHalfWidthParentheses)
+        val copyIntent = createCopyIntent(article, lawDisplayName, useHalfWidthParentheses)
+        val shareIntent = createShareIntent(article, lawDisplayName, useHalfWidthParentheses)
         val bookmarkIntent = createBookmarkIntent(article)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -69,7 +72,7 @@ class ArticleNotificationSender @Inject constructor(
                 NotificationCompat.BigTextStyle()
                     .bigText(fullText)
                     .setBigContentTitle(title)
-                    .setSummaryText(article.lawDisplayName)
+                    .setSummaryText(lawDisplayName)
             )
             .setContentIntent(contentIntent)
             .addAction(
@@ -118,12 +121,12 @@ class ArticleNotificationSender @Inject constructor(
         )
     }
 
-    private fun getArticleShareText(article: Article, useHalfWidthParentheses: Boolean): String {
-        return "${article.lawDisplayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
+    private fun getArticleShareText(article: Article, lawDisplayName: String, useHalfWidthParentheses: Boolean): String {
+        return "$lawDisplayName ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
     }
 
-    private fun createCopyIntent(article: Article, useHalfWidthParentheses: Boolean): PendingIntent {
-        val fullText = getArticleShareText(article, useHalfWidthParentheses)
+    private fun createCopyIntent(article: Article, lawDisplayName: String, useHalfWidthParentheses: Boolean): PendingIntent {
+        val fullText = getArticleShareText(article, lawDisplayName, useHalfWidthParentheses)
         val intent = Intent(context, CopyActionReceiver::class.java).apply {
             action = CopyActionReceiver.ACTION_COPY
             putExtra(CopyActionReceiver.EXTRA_TEXT, fullText)
@@ -137,8 +140,8 @@ class ArticleNotificationSender @Inject constructor(
         )
     }
 
-    private fun createShareIntent(article: Article, useHalfWidthParentheses: Boolean): PendingIntent {
-        val fullText = getArticleShareText(article, useHalfWidthParentheses)
+    private fun createShareIntent(article: Article, lawDisplayName: String, useHalfWidthParentheses: Boolean): PendingIntent {
+        val fullText = getArticleShareText(article, lawDisplayName, useHalfWidthParentheses)
         // Android 12+ では BroadcastReceiver から Activity を起動する trampoline パターンが
         // ブロックされるため、PendingIntent.getActivity() で直接 Sharesheet を起動する
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
@@ -177,6 +180,3 @@ class ArticleNotificationSender @Inject constructor(
         const val EXTRA_ARTICLE_NUMBER = "extra_article_number"
     }
 }
-
-private val Article.lawDisplayName: String
-    get() = PresetLaw.fromLawId(lawId)?.displayName ?: lawId.value

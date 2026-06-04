@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,6 +34,12 @@ class SettingsScreenViewModel @Inject constructor(
         )
 
     val lawMetadata: StateFlow<Map<LawCode, LawMetadata>> = lawRepository.observeLawMetadata()
+        .map { metadata ->
+            LawCode.entries.mapNotNull { lawCode ->
+                val lawMetadata = metadata[LawId(lawCode.lawId)] ?: return@mapNotNull null
+                lawCode to lawMetadata
+            }.toMap()
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -45,13 +52,13 @@ class SettingsScreenViewModel @Inject constructor(
 
     private fun refreshStaleData() {
         viewModelScope.launch {
-            val enabledCodes = settingsRepository.get().enabledLawCodes
-            val needsRefresh = lawRepository.getLawCodesNeedingRefresh()
-                .filter { it in enabledCodes }
+            val enabledLawIds = settingsRepository.get().enabledLawIds
+            val needsRefresh = lawRepository.getLawIdsNeedingRefresh()
+                .filter { it in enabledLawIds }
             if (needsRefresh.isEmpty()) return@launch
 
-            for (lawCode in needsRefresh) {
-                lawRepository.refreshLawCode(lawCode)
+            for (lawId in needsRefresh) {
+                lawRepository.refreshLawId(lawId)
             }
         }
     }
@@ -80,9 +87,10 @@ class SettingsScreenViewModel @Inject constructor(
 
     fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepository.setLawEnabled(LawId(lawCode.lawId), enabled)
+            val lawId = LawId(lawCode.lawId)
+            settingsRepository.setLawEnabled(lawId, enabled)
             if (enabled) {
-                lawRepository.refreshLawCode(lawCode)
+                lawRepository.refreshLawId(lawId)
             }
         }
     }
@@ -106,9 +114,9 @@ class SettingsScreenViewModel @Inject constructor(
         viewModelScope.launch {
             _isRefreshing.value = true
             lawRepository.clearCache()
-            val enabledCodes = settingsRepository.get().enabledLawCodes
-            for (lawCode in enabledCodes) {
-                lawRepository.refreshLawCode(lawCode)
+            val enabledLawIds = settingsRepository.get().enabledLawIds
+            for (lawId in enabledLawIds) {
+                lawRepository.refreshLawId(lawId)
             }
             _isRefreshing.value = false
         }

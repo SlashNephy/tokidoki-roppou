@@ -6,6 +6,7 @@ import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,6 +30,12 @@ class LawsScreenViewModel @Inject constructor(
 ) : ViewModel() {
 
     val lawMetadata: StateFlow<Map<LawCode, LawMetadata>> = lawRepository.observeLawMetadata()
+        .map { metadata ->
+            LawCode.entries.mapNotNull { lawCode ->
+                val lawMetadata = metadata[LawId(lawCode.lawId)] ?: return@mapNotNull null
+                lawCode to lawMetadata
+            }.toMap()
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     private val _useHalfWidthParentheses = MutableStateFlow(false)
@@ -72,6 +80,11 @@ class LawsScreenViewModel @Inject constructor(
                 } else {
                     _isSearching.value = true
                     _searchResults.value = lawRepository.searchArticles(query)
+                        .mapNotNull { (lawId, articles) ->
+                            val lawCode = LawCode.fromStoredValue(lawId.value) ?: return@mapNotNull null
+                            lawCode to articles
+                        }
+                        .toMap()
                     _isSearching.value = false
                 }
             }
@@ -92,7 +105,7 @@ class LawsScreenViewModel @Inject constructor(
     private fun loadStructuredContent(lawCode: LawCode) {
         viewModelScope.launch {
             _loadingLaw.value = lawCode
-            val content = lawRepository.getStructuredContent(lawCode)
+            val content = lawRepository.getStructuredContent(LawId(lawCode.lawId))
             _structuredContent.value = _structuredContent.value + (lawCode to content)
             // デフォルトで全見出しを折りたたみ状態にする
             val headingIndices = content
