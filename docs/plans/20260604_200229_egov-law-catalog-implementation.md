@@ -114,7 +114,7 @@ class PresetLawTest {
 Run:
 
 ```bash
-./gradlew :core:domain:testStagingDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.domain.model.PresetLawTest'
+./gradlew :core:domain:testDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.domain.model.PresetLawTest'
 ```
 
 Expected: FAIL because `LawId` and `PresetLaw` do not exist.
@@ -191,7 +191,7 @@ companion object {
 Run:
 
 ```bash
-./gradlew :core:domain:testStagingDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.domain.model.PresetLawTest'
+./gradlew :core:domain:testDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.domain.model.PresetLawTest'
 ```
 
 Expected: PASS.
@@ -311,7 +311,7 @@ class ApplicationSettingsRepositoryImplTest {
 Run:
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImplTest'
+./gradlew :core:data:testDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImplTest'
 ```
 
 Expected: FAIL because `enabledLawIds` and `LawId` settings APIs are not implemented.
@@ -351,7 +351,7 @@ In `get()` and `observe()`, call a private `migrateEnabledLawIdsIfNeeded()` that
 Run:
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImplTest'
+./gradlew :core:data:testDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImplTest'
 ```
 
 Expected: PASS.
@@ -391,7 +391,7 @@ assertEquals("129AC0000000089", querySingleString(db, "SELECT lawCode FROM struc
 Run:
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.db.Migration9To10Test'
+./gradlew :core:data:testDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.db.Migration9To10Test'
 ```
 
 Expected: FAIL because `MIGRATION_9_10` and `laws` table do not exist.
@@ -455,7 +455,7 @@ Then update each legacy enum name in `articles`, `bookmarks`, `law_metadata`, an
 Run:
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.db.Migration9To10Test'
+./gradlew :core:data:testDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.db.Migration9To10Test'
 ```
 
 Expected: PASS.
@@ -565,7 +565,7 @@ class LawJsonParserTest {
 Run:
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests '*ArticleEntityMapperTest' --tests '*LawJsonParserTest'
+./gradlew :core:data:testDebugUnitTest --tests '*ArticleEntityMapperTest' --tests '*LawJsonParserTest'
 ```
 
 Expected: FAIL because the domain model still requires `LawCode`.
@@ -607,7 +607,7 @@ Timber.e(e, "Failed to update law data for %s", lawId.value)
 Run:
 
 ```bash
-./gradlew :core:domain:testStagingDebugUnitTest :core:data:testStagingDebugUnitTest
+./gradlew :core:domain:testDebugUnitTest :core:data:testDebugUnitTest
 ```
 
 Expected: PASS.
@@ -676,7 +676,7 @@ Use small fake implementations for `lawDao`, `settingsRepository`, and `apiClien
 Run:
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.repository.LawCatalogRepositoryImplTest'
+./gradlew :core:data:testDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.repository.LawCatalogRepositoryImplTest'
 ```
 
 Expected: FAIL because `LawCatalogRepositoryImpl` does not exist.
@@ -708,7 +708,7 @@ In `EGovLawApiClient`, add `searchLaws(query: String): List<Law>` that calls `/k
 Run:
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.repository.LawCatalogRepositoryImplTest'
+./gradlew :core:data:testDebugUnitTest --tests 'blue.starry.tokidokiroppou.core.data.repository.LawCatalogRepositoryImplTest'
 ```
 
 Expected: PASS.
@@ -796,7 +796,7 @@ Add a mode control near the existing search field with two options: cached artic
 Run:
 
 ```bash
-./gradlew :feature:laws:compileStagingDebugKotlin
+./gradlew :feature:laws:compileDebugKotlin
 ```
 
 Expected: PASS.
@@ -834,7 +834,7 @@ Show preset laws and added laws in separate sections. Add a "法令を追加" ac
 Run:
 
 ```bash
-./gradlew :feature:settings:compileStagingDebugKotlin
+./gradlew :feature:settings:compileDebugKotlin
 ```
 
 Expected: PASS.
@@ -856,7 +856,7 @@ git commit -m "feat: 設定画面から通知対象法令を追加可能にす�
 Run:
 
 ```bash
-./gradlew :core:domain:testStagingDebugUnitTest :core:data:testStagingDebugUnitTest :feature:laws:compileStagingDebugKotlin :feature:settings:compileStagingDebugKotlin :app:compileStagingDebugKotlin
+./gradlew :core:domain:testDebugUnitTest :core:data:testDebugUnitTest :feature:laws:compileDebugKotlin :feature:settings:compileDebugKotlin :app:compileStagingDebugKotlin
 ```
 
 Expected: PASS.
@@ -910,7 +910,7 @@ gh pr create --title "e-Gov 法令カタログから法令を追加できるよ�
 
 ## 確認
 
-- [ ] ./gradlew :core:domain:testStagingDebugUnitTest :core:data:testStagingDebugUnitTest :feature:laws:compileStagingDebugKotlin :feature:settings:compileStagingDebugKotlin :app:compileStagingDebugKotlin
+- [ ] ./gradlew :core:domain:testDebugUnitTest :core:data:testDebugUnitTest :feature:laws:compileDebugKotlin :feature:settings:compileDebugKotlin :app:compileStagingDebugKotlin
 - [ ] ./gradlew testStagingDebugUnitTest lintStagingDebug assembleStagingDebug
 EOF
 )"
