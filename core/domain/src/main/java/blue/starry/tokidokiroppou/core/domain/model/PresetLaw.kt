@@ -188,15 +188,16 @@ enum class PresetLaw(
             displayName = displayName,
             category = category,
             isPreset = true,
+            isAdded = true,
         )
     }
 
     companion object {
         val all: List<Law> = entries.map { it.toLaw() }
 
-        val defaultNotificationLawIds: List<LawId> = entries
+        val defaultNotificationLawIds: Set<LawId> = entries
             .filter { it.category == LawCategory.ROPPOU }
-            .map { it.id }
+            .mapTo(mutableSetOf()) { it.id }
 
         fun fromLegacyCodeName(name: String): PresetLaw? {
             return entries.firstOrNull { it.legacyCodeName == name }
