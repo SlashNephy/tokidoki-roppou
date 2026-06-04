@@ -6,6 +6,7 @@ import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.worker.ArticleNotificationScheduler
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -79,7 +80,7 @@ class SettingsScreenViewModel @Inject constructor(
 
     fun setLawCodeEnabled(lawCode: LawCode, enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepository.setLawCodeEnabled(lawCode, enabled)
+            settingsRepository.setLawEnabled(LawId(lawCode.lawId), enabled)
             if (enabled) {
                 lawRepository.refreshLawCode(lawCode)
             }
