@@ -12,11 +12,13 @@ import androidx.work.WorkManager
 import blue.starry.tokidokiroppou.core.data.db.AppDatabase
 import blue.starry.tokidokiroppou.core.data.db.ArticleDao
 import blue.starry.tokidokiroppou.core.data.db.BookmarkDao
+import blue.starry.tokidokiroppou.core.data.db.LawDao
 import blue.starry.tokidokiroppou.core.data.db.LawMetadataDao
 import blue.starry.tokidokiroppou.core.data.db.StructureHeadingDao
 import blue.starry.tokidokiroppou.core.data.repository.ApplicationSettingsRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.repository.BookmarkRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
+import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
@@ -89,6 +91,40 @@ object DataProvidesModule {
         }
     }
 
+    internal val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS laws (
+                    lawId TEXT NOT NULL,
+                    displayName TEXT NOT NULL,
+                    lawNum TEXT,
+                    category TEXT NOT NULL,
+                    addedAt INTEGER NOT NULL,
+                    PRIMARY KEY(lawId)
+                )
+                """,
+            )
+
+            PresetLaw.entries.forEach { presetLaw ->
+                updateLegacyLawCodeName(db, "articles", presetLaw)
+                updateLegacyLawCodeName(db, "bookmarks", presetLaw)
+                updateLegacyLawCodeName(db, "law_metadata", presetLaw)
+                updateLegacyLawCodeName(db, "structure_headings", presetLaw)
+            }
+        }
+    }
+
+    private fun updateLegacyLawCodeName(
+        db: SupportSQLiteDatabase,
+        tableName: String,
+        presetLaw: PresetLaw,
+    ) {
+        db.execSQL(
+            "UPDATE $tableName SET lawCode = '${presetLaw.id.value}' WHERE lawCode = '${presetLaw.legacyCodeName}'",
+        )
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -98,7 +134,7 @@ object DataProvidesModule {
             context,
             AppDatabase::class.java,
             "tokidoki_roppou.db",
-        ).addMigrations(MIGRATION_7_8, MIGRATION_8_9)
+        ).addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -125,6 +161,12 @@ object DataProvidesModule {
     @Singleton
     fun provideStructureHeadingDao(database: AppDatabase): StructureHeadingDao {
         return database.structureHeadingDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLawDao(database: AppDatabase): LawDao {
+        return database.lawDao()
     }
 
     @Provides
