@@ -5,7 +5,8 @@ import blue.starry.tokidokiroppou.core.data.db.BookmarkDao
 import blue.starry.tokidokiroppou.core.data.db.BookmarkEntity
 import blue.starry.tokidokiroppou.core.data.db.toDomain
 import blue.starry.tokidokiroppou.core.domain.model.Article
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawId
+import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import blue.starry.tokidokiroppou.core.domain.repository.BookmarkRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -25,25 +26,25 @@ class BookmarkRepositoryImpl @Inject constructor(
     }
 
     override fun observeIsBookmarked(
-        lawCode: LawCode,
+        lawId: LawId,
         articleNumber: String,
         supplementaryProvisionLabel: String?,
     ): Flow<Boolean> {
         return bookmarkDao.observeIsBookmarked(
-            lawCode.storedKeys(),
+            lawId.storedKeys(),
             articleNumber,
             supplementaryProvisionLabel ?: "",
         )
     }
 
     override suspend fun add(
-        lawCode: LawCode,
+        lawId: LawId,
         articleNumber: String,
         supplementaryProvisionLabel: String?,
     ) {
         bookmarkDao.insert(
             BookmarkEntity(
-                lawCode = lawCode.lawId,
+                lawCode = lawId.value,
                 articleNumber = articleNumber,
                 supplementaryProvisionLabel = supplementaryProvisionLabel ?: "",
             ),
@@ -51,26 +52,26 @@ class BookmarkRepositoryImpl @Inject constructor(
     }
 
     override suspend fun remove(
-        lawCode: LawCode,
+        lawId: LawId,
         articleNumber: String,
         supplementaryProvisionLabel: String?,
     ) {
         bookmarkDao.delete(
-            lawCode.storedKeys(),
+            lawId.storedKeys(),
             articleNumber,
             supplementaryProvisionLabel ?: "",
         )
     }
 
     override suspend fun toggle(
-        lawCode: LawCode,
+        lawId: LawId,
         articleNumber: String,
         supplementaryProvisionLabel: String?,
     ) {
-        bookmarkDao.toggle(lawCode.storedKeys(), articleNumber, supplementaryProvisionLabel ?: "")
+        bookmarkDao.toggle(lawId.storedKeys(), articleNumber, supplementaryProvisionLabel ?: "")
     }
 
-    private fun LawCode.storedKeys(): List<String> {
-        return listOf(lawId, name)
+    private fun LawId.storedKeys(): List<String> {
+        return listOfNotNull(value, PresetLaw.fromLawId(this)?.legacyCodeName)
     }
 }

@@ -1,7 +1,7 @@
 package blue.starry.tokidokiroppou.core.data.parser
 
 import blue.starry.tokidokiroppou.core.domain.model.Article
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.StructureHeading
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -38,7 +38,7 @@ class LawJsonParser @Inject constructor() {
         "Division" to ("DivisionTitle" to StructureHeading.Level.Division),
     )
 
-    fun parse(jsonString: String, lawCode: LawCode): LawParseResult {
+    fun parse(jsonString: String, lawId: LawId): LawParseResult {
         val root = json.parseToJsonElement(jsonString).jsonObject
         val lawFullText = root["law_full_text"]?.jsonObject
             ?: return LawParseResult(emptyList(), emptyList(), emptyMap())
@@ -48,7 +48,7 @@ class LawJsonParser @Inject constructor() {
         val articleOrderIndices = mutableMapOf<String, Int>()
         val orderCounter = intArrayOf(0) // 可変カウンター
 
-        collectArticles(lawFullText, lawCode, articles, headings, articleOrderIndices, orderCounter)
+        collectArticles(lawFullText, lawId, articles, headings, articleOrderIndices, orderCounter)
         return LawParseResult(
             articles = articles,
             headings = headings,
@@ -58,7 +58,7 @@ class LawJsonParser @Inject constructor() {
 
     private fun collectArticles(
         node: JsonObject,
-        lawCode: LawCode,
+        lawId: LawId,
         articles: MutableList<Article>,
         headings: MutableList<StructureHeading>,
         articleOrderIndices: MutableMap<String, Int>,
@@ -69,7 +69,7 @@ class LawJsonParser @Inject constructor() {
 
         // 条文ノードの場合
         if (tag == "Article") {
-            parseArticle(node, lawCode, supplementaryProvisionLabel)?.let { article ->
+            parseArticle(node, lawId, supplementaryProvisionLabel)?.let { article ->
                 val index = orderCounter[0]++
                 articles.add(article)
                 // 附則の条文はラベル付きでキーを区別する
@@ -95,7 +95,7 @@ class LawJsonParser @Inject constructor() {
                         if (titleText.isNotEmpty()) {
                             headings.add(
                                 StructureHeading(
-                                    lawCode = lawCode,
+                                    lawId = lawId,
                                     title = titleText,
                                     level = level,
                                     orderIndex = orderCounter[0]++,
@@ -130,7 +130,7 @@ class LawJsonParser @Inject constructor() {
             }
             headings.add(
                 StructureHeading(
-                    lawCode = lawCode,
+                    lawId = lawId,
                     title = titleText,
                     level = StructureHeading.Level.SupplementaryProvision,
                     orderIndex = orderCounter[0]++,
@@ -148,7 +148,7 @@ class LawJsonParser @Inject constructor() {
         val children = node["children"]?.jsonArray ?: return
         for (child in children) {
             if (child is JsonObject) {
-                collectArticles(child, lawCode, articles, headings, articleOrderIndices, orderCounter, label)
+                collectArticles(child, lawId, articles, headings, articleOrderIndices, orderCounter, label)
             }
         }
     }
@@ -189,7 +189,7 @@ class LawJsonParser @Inject constructor() {
         return hasTitle && hasValidParagraph
     }
 
-    private fun parseArticle(node: JsonObject, lawCode: LawCode, supplementaryProvisionLabel: String? = null): Article? {
+    private fun parseArticle(node: JsonObject, lawId: LawId, supplementaryProvisionLabel: String? = null): Article? {
         val num = node["attr"]?.jsonObject?.get("Num")?.jsonPrimitive?.content ?: ""
         val children = node["children"]?.jsonArray ?: return null
 
@@ -216,7 +216,7 @@ class LawJsonParser @Inject constructor() {
         if (paragraphs.size == 1 && paragraphs.first().text.trim() == "削除") return null
 
         return Article(
-            lawCode = lawCode,
+            lawId = lawId,
             articleNumber = num,
             articleTitle = articleTitle,
             articleCaption = articleCaption,

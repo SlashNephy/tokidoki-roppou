@@ -5,7 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
+import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -23,11 +23,11 @@ class CacheRefreshWorker @AssistedInject constructor(
         Timber.d("CacheRefreshWorker started")
 
         val settings = settingsRepository.get()
-        val lawCodes = settings.enabledLawCodes.ifEmpty { LawCode.entries.toSet() }
+        val lawIds = settings.enabledLawIds.ifEmpty { PresetLaw.defaultNotificationLawIds }
 
         var allSuccess = true
-        for (lawCode in lawCodes) {
-            if (!lawRepository.refreshLawCode(lawCode)) {
+        for (lawId in lawIds) {
+            if (!lawRepository.refreshLawId(lawId)) {
                 allSuccess = false
             }
         }

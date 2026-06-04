@@ -1,7 +1,7 @@
 package blue.starry.tokidokiroppou.core.domain.model
 
 data class Article(
-    val lawCode: LawCode,
+    val lawId: LawId,
     val articleNumber: String,
     val articleTitle: String,
     val articleCaption: String,

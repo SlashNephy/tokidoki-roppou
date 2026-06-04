@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import blue.starry.tokidokiroppou.core.data.R
 import blue.starry.tokidokiroppou.core.domain.model.Article
+import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import javax.inject.Inject
@@ -68,7 +69,7 @@ class ArticleNotificationSender @Inject constructor(
                 NotificationCompat.BigTextStyle()
                     .bigText(fullText)
                     .setBigContentTitle(title)
-                    .setSummaryText(article.lawCode.displayName)
+                    .setSummaryText(article.lawDisplayName)
             )
             .setContentIntent(contentIntent)
             .addAction(
@@ -104,7 +105,7 @@ class ArticleNotificationSender @Inject constructor(
                 setClassName(context, "blue.starry.tokidokiroppou.MainActivity")
             }
         launchIntent.apply {
-            putExtra(EXTRA_LAW_CODE, article.lawCode.name)
+            putExtra(EXTRA_LAW_CODE, article.lawId.value)
             putExtra(EXTRA_ARTICLE_NUMBER, article.articleNumber)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -118,7 +119,7 @@ class ArticleNotificationSender @Inject constructor(
     }
 
     private fun getArticleShareText(article: Article, useHalfWidthParentheses: Boolean): String {
-        return "${article.lawCode.displayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
+        return "${article.lawDisplayName} ${article.displayTitle(useHalfWidthParentheses)}\n${article.fullText(useHalfWidthParentheses)}"
     }
 
     private fun createCopyIntent(article: Article, useHalfWidthParentheses: Boolean): PendingIntent {
@@ -157,7 +158,7 @@ class ArticleNotificationSender @Inject constructor(
     private fun createBookmarkIntent(article: Article): PendingIntent {
         val intent = Intent(context, BookmarkActionReceiver::class.java).apply {
             action = BookmarkActionReceiver.ACTION_BOOKMARK
-            putExtra(BookmarkActionReceiver.EXTRA_LAW_CODE, article.lawCode.name)
+            putExtra(BookmarkActionReceiver.EXTRA_LAW_CODE, article.lawId.value)
             putExtra(BookmarkActionReceiver.EXTRA_ARTICLE_NUMBER, article.articleNumber)
             putExtra(BookmarkActionReceiver.EXTRA_SUPPLEMENTARY_PROVISION_LABEL, article.supplementaryProvisionLabel ?: "")
         }
@@ -176,3 +177,6 @@ class ArticleNotificationSender @Inject constructor(
         const val EXTRA_ARTICLE_NUMBER = "extra_article_number"
     }
 }
+
+private val Article.lawDisplayName: String
+    get() = PresetLaw.fromLawId(lawId)?.displayName ?: lawId.value

@@ -13,9 +13,10 @@ import blue.starry.tokidokiroppou.core.data.db.toDomain
 import blue.starry.tokidokiroppou.core.data.db.toEntity
 import blue.starry.tokidokiroppou.core.data.parser.LawJsonParser
 import blue.starry.tokidokiroppou.core.domain.model.Article
-import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawContentItem
+import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
+import blue.starry.tokidokiroppou.core.domain.model.PresetLaw
 import blue.starry.tokidokiroppou.core.domain.model.extractArticleReferences
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import kotlinx.coroutines.flow.Flow
@@ -34,19 +35,19 @@ class LawRepositoryImpl @Inject constructor(
     private val structureHeadingDao: StructureHeadingDao,
 ) : LawRepository {
 
-    override suspend fun getArticles(lawCode: LawCode): List<Article> {
-        val cached = getArticlesByStoredLawCodeOrdered(lawCode).mapNotNull { it.toDomain() }
+    override suspend fun getArticles(lawId: LawId): List<Article> {
+        val cached = getArticlesByStoredLawIdOrdered(lawId).mapNotNull { it.toDomain() }
         if (cached.isNotEmpty()) {
             return cached
         }
 
-        return fetchAndCache(lawCode)
+        return fetchAndCache(lawId)
     }
 
-    override suspend fun getStructuredContent(lawCode: LawCode): List<LawContentItem> {
+    override suspend fun getStructuredContent(lawId: LawId): List<LawContentItem> {
         // キャッシュ済みの条文と見出しを取得
-        val cachedArticles = getArticlesByStoredLawCode(lawCode)
-        val cachedHeadings = getHeadingsByStoredLawCode(lawCode)
+        val cachedArticles = getArticlesByStoredLawId(lawId)
+        val cachedHeadings = getHeadingsByStoredLawId(lawId)
 
         // v8→v9 移行前のレガシーキャッシュを検出して再取得する
         // レガシーキャッシュ: 条文はあるが見出しがなく、全 orderIndex が初期値(0)のまま
@@ -55,18 +56,18 @@ class LawRepositoryImpl @Inject constructor(
             cachedArticles.all { it.orderIndex == 0 }
 
         if (cachedArticles.isEmpty() || isLegacyCache) {
-            updateLawDataFromApi(lawCode)
+            updateLawDataFromApi(lawId)
             // API 取得後に DB から再読み込み
-            return buildStructuredContent(lawCode)
+            return buildStructuredContent(lawId)
         }
 
         return buildStructuredContent(cachedArticles, cachedHeadings)
     }
 
     /** DB のエンティティから LawContentItem リストを組み立てる */
-    private suspend fun buildStructuredContent(lawCode: LawCode): List<LawContentItem> {
-        val articles = getArticlesByStoredLawCode(lawCode)
-        val headings = getHeadingsByStoredLawCode(lawCode)
+    private suspend fun buildStructuredContent(lawId: LawId): List<LawContentItem> {
+        val articles = getArticlesByStoredLawId(lawId)
+        val headings = getHeadingsByStoredLawId(lawId)
         return buildStructuredContent(articles, headings)
     }
 
@@ -85,10 +86,10 @@ class LawRepositoryImpl @Inject constructor(
         return (articles + headings).sortedBy { it.orderIndex }
     }
 
-    override suspend fun getRandomArticle(lawCodes: Set<LawCode>, excludeSupplementaryProvisions: Boolean): Article? {
-        if (lawCodes.isEmpty()) return null
+    override suspend fun getRandomArticle(lawIds: Set<LawId>, excludeSupplementaryProvisions: Boolean): Article? {
+        if (lawIds.isEmpty()) return null
 
-        val codes = lawCodes.flatMap { it.storedKeys() }
+        val codes = lawIds.flatMap { it.storedKeys() }
         val entity = if (excludeSupplementaryProvisions) {
             articleDao.getRandomByLawCodesExcludingSupplProvision(codes)
         } else {
@@ -99,8 +100,8 @@ class LawRepositoryImpl @Inject constructor(
         }
 
         // DB にデータがなければ取得を試みる
-        val selectedLawCode = lawCodes.random()
-        val articles = fetchAndCache(selectedLawCode)
+        val selectedLawId = lawIds.random()
+        val articles = fetchAndCache(selectedLawId)
         val candidates = if (excludeSupplementaryProvisions) {
             articles.filter { it.supplementaryProvisionLabel == null }
         } else {
@@ -109,13 +110,16 @@ class LawRepositoryImpl @Inject constructor(
         return candidates.randomOrNull()
     }
 
-    override suspend fun getArticle(lawCode: LawCode, articleNumber: String, supplementaryProvisionLabel: String?): Article? {
+    override suspend fun getArticle(lawId: LawId, articleNumber: String, supplementaryProvisionLabel: String?): Article? {
+        val keys = lawId.storedKeys()
         val entity = if (supplementaryProvisionLabel != null) {
-            articleDao.getByLawCodeAndArticleNumberAndSupplProvision(lawCode.lawId, articleNumber, supplementaryProvisionLabel)
-                ?: articleDao.getByLawCodeAndArticleNumberAndSupplProvision(lawCode.name, articleNumber, supplementaryProvisionLabel)
+            keys.firstMatchingArticle { key ->
+                articleDao.getByLawCodeAndArticleNumberAndSupplProvision(key, articleNumber, supplementaryProvisionLabel)
+            }
         } else {
-            articleDao.getByLawCodeAndArticleNumber(lawCode.lawId, articleNumber)
-                ?: articleDao.getByLawCodeAndArticleNumber(lawCode.name, articleNumber)
+            keys.firstMatchingArticle { key ->
+                articleDao.getByLawCodeAndArticleNumber(key, articleNumber)
+            }
         }
         return entity?.toDomain()
     }
@@ -123,13 +127,14 @@ class LawRepositoryImpl @Inject constructor(
     override suspend fun getRelatedArticles(article: Article): List<Article> {
         val refs = extractArticleReferences(article)
         if (refs.isEmpty()) return emptyList()
-        return getArticlesByStoredLawCodeAndArticleNumbers(article.lawCode, refs)
+        return getArticlesByStoredLawIdAndArticleNumbers(article.lawId, refs)
             .mapNotNull { it.toDomain() }
     }
 
-    override suspend fun getLawMetadata(lawCode: LawCode): LawMetadata? {
-        val entity = lawMetadataDao.getByLawCode(lawCode.lawId)
-            ?: lawMetadataDao.getByLawCode(lawCode.name)
+    override suspend fun getLawMetadata(lawId: LawId): LawMetadata? {
+        val entity = lawId.storedKeys().firstMatchingMetadata { key ->
+            lawMetadataDao.getByLawCode(key)
+        }
             ?: return null
         return LawMetadata(
             lawNum = entity.lawNum,
@@ -140,38 +145,37 @@ class LawRepositoryImpl @Inject constructor(
         )
     }
 
-    override fun observeLawMetadata(): Flow<Map<LawCode, LawMetadata>> {
+    override fun observeLawMetadata(): Flow<Map<LawId, LawMetadata>> {
         return lawMetadataDao.observeAll().map { entities ->
-            entities.mapNotNull { entity ->
-                val lawCode = LawCode.fromStoredValue(entity.lawCode) ?: return@mapNotNull null
-                lawCode to LawMetadata(
+            entities.associate { entity ->
+                LawId(entity.lawCode) to LawMetadata(
                     lawNum = entity.lawNum,
                     promulgationDate = entity.promulgationDate,
                     lastAmendmentDate = entity.lastAmendmentDate,
                     lastAmendmentLawNum = entity.lastAmendmentLawNum,
                     lastRefreshedAt = entity.lastRefreshedAt,
                 )
-            }.toMap()
+            }
         }
     }
 
-    override suspend fun searchArticles(query: String): Map<LawCode, List<Article>> {
+    override suspend fun searchArticles(query: String): Map<LawId, List<Article>> {
         if (query.isBlank()) return emptyMap()
         return articleDao.search(query)
             .mapNotNull { it.toDomain() }
-            .groupBy { it.lawCode }
+            .groupBy { it.lawId }
     }
 
-    suspend fun getLawCodesNeedingRefresh(): List<LawCode> {
+    suspend fun getLawIdsNeedingRefresh(): List<LawId> {
         val threshold = System.currentTimeMillis() - REFRESH_THRESHOLD_MS
         val recentCodes = lawMetadataDao.getRecentlyRefreshedCodes(threshold).toSet()
-        return LawCode.entries.filter { lawCode ->
-            lawCode.storedKeys().none { it in recentCodes }
+        return PresetLaw.entries.map { it.id }.filter { lawId ->
+            lawId.storedKeys().none { it in recentCodes }
         }
     }
 
-    suspend fun refreshLawCode(lawCode: LawCode): Boolean {
-        return updateLawDataFromApi(lawCode) != null
+    suspend fun refreshLawId(lawId: LawId): Boolean {
+        return updateLawDataFromApi(lawId) != null
     }
 
     suspend fun clearCache() {
@@ -193,17 +197,17 @@ class LawRepositoryImpl @Inject constructor(
      * API からデータを取得し、トランザクション内で DB にキャッシュする共通処理。
      * 成功時は取得した条文リストを返し、失敗時は null を返す。
      */
-    private suspend fun updateLawDataFromApi(lawCode: LawCode): List<Article>? {
+    private suspend fun updateLawDataFromApi(lawId: LawId): List<Article>? {
         return try {
-            val jsonString = apiClient.getLawData(lawCode.lawId)
-            val result = jsonParser.parse(jsonString, lawCode)
+            val jsonString = apiClient.getLawData(lawId.value)
+            val result = jsonParser.parse(jsonString, lawId)
             if (result.articles.isNotEmpty()) {
                 // 複数テーブルの更新をトランザクションで保護する
                 database.withTransaction {
-                    articleDao.deleteByLawCode(lawCode.lawId)
-                    articleDao.deleteByLawCode(lawCode.name)
-                    structureHeadingDao.deleteByLawCode(lawCode.lawId)
-                    structureHeadingDao.deleteByLawCode(lawCode.name)
+                    for (key in lawId.storedKeys()) {
+                        articleDao.deleteByLawCode(key)
+                        structureHeadingDao.deleteByLawCode(key)
+                    }
                     articleDao.insertAll(result.articles.map { article ->
                         val key = if (article.supplementaryProvisionLabel != null) {
                             "${article.supplementaryProvisionLabel}:${article.articleNumber}"
@@ -214,14 +218,14 @@ class LawRepositoryImpl @Inject constructor(
                     })
                     structureHeadingDao.insertAll(result.headings.map { it.toEntity() })
                 }
-                Timber.d("Cached %d articles and %d headings from %s", result.articles.size, result.headings.size, lawCode.displayName)
+                Timber.d("Cached %d articles and %d headings from %s", result.articles.size, result.headings.size, lawId.displayName())
             }
-            val revisionInfo = apiClient.getLawRevisionInfo(lawCode.lawId)
+            val revisionInfo = apiClient.getLawRevisionInfo(lawId.value)
             if (revisionInfo != null) {
-                lawMetadataDao.deleteByLawCode(lawCode.name)
+                PresetLaw.fromLawId(lawId)?.legacyCodeName?.let { lawMetadataDao.deleteByLawCode(it) }
                 lawMetadataDao.upsert(
                     LawMetadataEntity(
-                        lawCode = lawCode.lawId,
+                        lawCode = lawId.value,
                         lawNum = revisionInfo.lawNum,
                         promulgationDate = revisionInfo.promulgationDate,
                         lastAmendmentDate = revisionInfo.amendmentDate,
@@ -231,43 +235,71 @@ class LawRepositoryImpl @Inject constructor(
             }
             result.articles
         } catch (e: Exception) {
-            Timber.e(e, "Failed to update law data for %s", lawCode.displayName)
+            Timber.e(e, "Failed to update law data for %s", lawId.displayName())
             null
         }
     }
 
-    private suspend fun fetchAndCache(lawCode: LawCode): List<Article> {
-        return updateLawDataFromApi(lawCode) ?: emptyList()
+    private suspend fun fetchAndCache(lawId: LawId): List<Article> {
+        return updateLawDataFromApi(lawId) ?: emptyList()
     }
 
-    private suspend fun getArticlesByStoredLawCode(lawCode: LawCode): List<ArticleEntity> {
-        return articleDao.getByLawCode(lawCode.lawId).ifEmpty {
-            articleDao.getByLawCode(lawCode.name)
+    private suspend fun getArticlesByStoredLawId(lawId: LawId): List<ArticleEntity> {
+        return lawId.storedKeys().firstNotEmptyOfOrEmpty { key ->
+            articleDao.getByLawCode(key)
         }
     }
 
-    private suspend fun getArticlesByStoredLawCodeOrdered(lawCode: LawCode): List<ArticleEntity> {
-        return articleDao.getByLawCodeOrdered(lawCode.lawId).ifEmpty {
-            articleDao.getByLawCodeOrdered(lawCode.name)
+    private suspend fun getArticlesByStoredLawIdOrdered(lawId: LawId): List<ArticleEntity> {
+        return lawId.storedKeys().firstNotEmptyOfOrEmpty { key ->
+            articleDao.getByLawCodeOrdered(key)
         }
     }
 
-    private suspend fun getHeadingsByStoredLawCode(lawCode: LawCode): List<StructureHeadingEntity> {
-        return structureHeadingDao.getByLawCode(lawCode.lawId).ifEmpty {
-            structureHeadingDao.getByLawCode(lawCode.name)
+    private suspend fun getHeadingsByStoredLawId(lawId: LawId): List<StructureHeadingEntity> {
+        return lawId.storedKeys().firstNotEmptyOfOrEmpty { key ->
+            structureHeadingDao.getByLawCode(key)
         }
     }
 
-    private suspend fun getArticlesByStoredLawCodeAndArticleNumbers(
-        lawCode: LawCode,
+    private suspend fun getArticlesByStoredLawIdAndArticleNumbers(
+        lawId: LawId,
         articleNumbers: List<String>,
     ): List<ArticleEntity> {
-        return articleDao.getByLawCodeAndArticleNumbers(lawCode.lawId, articleNumbers).ifEmpty {
-            articleDao.getByLawCodeAndArticleNumbers(lawCode.name, articleNumbers)
+        return lawId.storedKeys().firstNotEmptyOfOrEmpty { key ->
+            articleDao.getByLawCodeAndArticleNumbers(key, articleNumbers)
         }
     }
 
-    private fun LawCode.storedKeys(): List<String> {
-        return listOf(lawId, name)
+    private fun LawId.storedKeys(): List<String> {
+        return listOfNotNull(value, PresetLaw.fromLawId(this)?.legacyCodeName)
+    }
+
+    private fun LawId.displayName(): String {
+        return PresetLaw.fromLawId(this)?.displayName ?: value
+    }
+
+    private suspend fun <T> List<String>.firstNotEmptyOfOrEmpty(block: suspend (String) -> List<T>): List<T> {
+        for (key in this) {
+            val values = block(key)
+            if (values.isNotEmpty()) {
+                return values
+            }
+        }
+        return emptyList()
+    }
+
+    private suspend fun List<String>.firstMatchingArticle(block: suspend (String) -> ArticleEntity?): ArticleEntity? {
+        for (key in this) {
+            block(key)?.let { return it }
+        }
+        return null
+    }
+
+    private suspend fun List<String>.firstMatchingMetadata(block: suspend (String) -> LawMetadataEntity?): LawMetadataEntity? {
+        for (key in this) {
+            block(key)?.let { return it }
+        }
+        return null
     }
 }

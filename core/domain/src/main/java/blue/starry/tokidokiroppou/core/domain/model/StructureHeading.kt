@@ -5,7 +5,7 @@ package blue.starry.tokidokiroppou.core.domain.model
  * e-Gov API の PartTitle, ChapterTitle 等に対応する。
  */
 data class StructureHeading(
-    val lawCode: LawCode,
+    val lawId: LawId,
     val title: String,
     val level: Level,
     val orderIndex: Int,
