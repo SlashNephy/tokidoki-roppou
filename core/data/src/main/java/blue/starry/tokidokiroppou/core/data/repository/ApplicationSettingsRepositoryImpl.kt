@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -98,12 +99,16 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
             return
         }
 
-        dataStore.edit { mutablePreferences ->
-            val latest = mutablePreferences[KEY_ENABLED_LAW_CODES] ?: return@edit
-            val latestNormalized = latest.normalizeEnabledLawIds()
-            if (latest != latestNormalized) {
-                mutablePreferences[KEY_ENABLED_LAW_CODES] = latestNormalized
+        runCatching {
+            dataStore.edit { mutablePreferences ->
+                val latest = mutablePreferences[KEY_ENABLED_LAW_CODES] ?: return@edit
+                val latestNormalized = latest.normalizeEnabledLawIds()
+                if (latest != latestNormalized) {
+                    mutablePreferences[KEY_ENABLED_LAW_CODES] = latestNormalized
+                }
             }
+        }.onFailure { e ->
+            Timber.e(e, "Failed to write back migrated law IDs to DataStore")
         }
     }
 
