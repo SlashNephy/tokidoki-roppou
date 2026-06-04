@@ -214,6 +214,7 @@ class SettingsScreenViewModel @Inject constructor(
     fun addLawForNotifications(law: Law) {
         viewModelScope.launch {
             lawCatalogRepository.addLaw(law, enableNotification = true)
+            lawRepository.refreshLawId(law.id)
         }
     }
 

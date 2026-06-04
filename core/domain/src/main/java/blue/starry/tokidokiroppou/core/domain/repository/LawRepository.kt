@@ -23,4 +23,6 @@ interface LawRepository {
     fun observeLawMetadata(): Flow<Map<LawId, LawMetadata>>
 
     suspend fun searchArticles(query: String): Map<LawId, List<Article>>
+
+    suspend fun refreshLawId(lawId: LawId): Boolean
 }

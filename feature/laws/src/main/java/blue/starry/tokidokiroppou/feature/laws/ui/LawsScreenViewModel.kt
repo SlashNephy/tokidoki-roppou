@@ -196,6 +196,7 @@ class LawsScreenViewModel @Inject constructor(
     fun addLawForBrowsing(law: Law) {
         viewModelScope.launch {
             lawCatalogRepository.addLaw(law, enableNotification = false)
+            lawRepository.refreshLawId(law.id)
         }
     }
 

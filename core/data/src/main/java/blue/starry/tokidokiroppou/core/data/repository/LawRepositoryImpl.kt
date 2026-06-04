@@ -179,7 +179,7 @@ class LawRepositoryImpl @Inject constructor(
         }
     }
 
-    suspend fun refreshLawId(lawId: LawId): Boolean {
+    override suspend fun refreshLawId(lawId: LawId): Boolean {
         return updateLawDataFromApi(lawId) != null
     }
 
