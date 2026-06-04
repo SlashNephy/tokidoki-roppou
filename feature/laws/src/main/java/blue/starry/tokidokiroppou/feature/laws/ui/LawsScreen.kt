@@ -259,7 +259,7 @@ private fun LawsContent(
 
             itemsIndexed(
                 items = catalogSearchResults,
-                key = { index, law -> "catalog_${law.id.value}_$index" },
+                key = { _, law -> "catalog_${law.id.value}" },
             ) { _, law ->
                 CatalogLawListItem(
                     law = law,
