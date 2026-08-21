@@ -1,3 +1,9 @@
+<!-- markdownlint-disable MD033 MD041 -->
+<p align="center">
+  <img src="image/icon.png" alt="ときどき六法のアプリアイコン" width="128" />
+</p>
+<!-- markdownlint-enable MD033 MD041 -->
+
 # ときどき六法
 
 一定間隔で日本の法令の条文を通知してくれる Android アプリです。日常の中で自然と法律に触れる機会を作ります。
