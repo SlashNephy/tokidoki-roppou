@@ -17,6 +17,7 @@ monochrome レイヤーはランチャーがテーマアイコン用に単色化
 現れないため、意図的に無視する。
 """
 
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -26,6 +27,10 @@ ANDROID = "{http://schemas.android.com/apk/res/android}"
 SUPPORTED_VECTOR_ATTRS = {"width", "height", "viewportWidth", "viewportHeight"}
 SUPPORTED_PATH_ATTRS = {"pathData", "fillColor", "fillType", "name"}
 SUPPORTED_LAYER_ATTRS = {"drawable"}
+
+# Android は #AARRGGBB、SVG/CSS は #RRGGBBAA とアルファの位置が逆なので、
+# 8 桁の値をそのまま SVG に流すと色か透明度が変わる。6 桁だけ受け付ける。
+RGB = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 
 def fail(message: str) -> None:
@@ -38,8 +43,10 @@ def local(name: str) -> str:
 
 def check_attrs(element: ET.Element, supported: set[str], label: str) -> None:
     for raw in element.attrib:
-        if raw.startswith("xmlns") or not raw.startswith(ANDROID):
-            continue
+        # aapt:attr のような別名前空間の属性はインラインリソース定義などを持ち込む。
+        # 黙って無視すると図像が食い違うので、android 名前空間以外はすべて拒否する。
+        if not raw.startswith(ANDROID):
+            fail(f"unsupported non-android attribute on {label}: {raw}")
         if local(raw) not in supported:
             fail(f"unsupported attribute on {label}: {raw}")
 
@@ -69,7 +76,7 @@ def parse_vector(path: Path) -> tuple[str, str, list[str]]:
         fill = child.get(f"{ANDROID}fillColor")
         if fill is None:
             fail(f"{path}: <path> without android:fillColor")
-        if not fill.startswith("#"):
+        if not RGB.match(fill):
             fail(f"{path}: unsupported fillColor {fill!r}; only literal #RRGGBB is handled")
 
         attrs = [f'fill="{fill}"']
@@ -89,8 +96,8 @@ def lookup_color(res: Path, name: str) -> str:
     for color in ET.parse(res / "values" / "colors.xml").getroot():
         if color.tag == "color" and color.get("name") == name:
             value = (color.text or "").strip()
-            if not value.startswith("#"):
-                fail(f"@color/{name} is not a literal color: {value!r}")
+            if not RGB.match(value):
+                fail(f"@color/{name} is not a literal #RRGGBB color: {value!r}")
             return value
     fail(f"@color/{name} not found in values/colors.xml")
 
