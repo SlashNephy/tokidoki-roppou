@@ -55,6 +55,8 @@ monochrome はシステムが単色で塗り潰したうえで拡縮するため
 
 minSdk は 28 のため `mipmap-anydpi-v26` のみで全端末をカバーでき、レガシーの `mipmap-*dpi` PNG は作成しない。`AndroidManifest.xml` は `android:roundIcon` を参照していないため追加対応は不要。
 
+> **2026-08-22 追記:** レガシー mipmap を作らない判断は撤回した。端末上は上記のとおり不要だが、Firebase App Distribution のように APK からアイコンを取り出す外部のコンシューマは Adaptive Icon の XML を解釈せず、密度別ビットマップが無いとアイコンを表示できない。`mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png`（48 / 72 / 96 / 144 / 192 px、PNG）を追加する。図像は Adaptive Icon から機械的に焼き出すので二重管理にはならない。生成手順は `docs/superpowers/assets/icon/README.md` を参照。`android:roundIcon` を参照しない点は据え置きなので、`ic_launcher_round` も作らない。
+
 ## 通知アイコン
 
 `core/data/src/main/res/drawable/ic_notification.xml` を新シルエットに差し替える。24dp キャンバス、純白のアルファシルエット（本＋しおり）。ランチャー foreground とは別ファイルとして維持し、24dp 向けに線幅を独立して調整できるようにする。
