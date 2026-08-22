@@ -1,11 +1,15 @@
 # アプリアイコンのアセット
 
-ランチャーアイコンの図像の出所は `app/src/main/res` の Adaptive Icon（`drawable/ic_launcher_foreground.xml` と `@color/ic_launcher_background`）で、このディレクトリに図像そのものは置いていない。ここにあるのは、そこからレガシー mipmap を焼き出すための道具だけ。
+ランチャーアイコンの図像の出所は `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` の Adaptive Icon ただ一つで、このディレクトリに図像そのものは置いていない。ここにあるのは、そこからレガシー mipmap を焼き出すための道具だけ。
 
 | ファイル | 役割 |
 | --- | --- |
-| `vector_to_svg.py` | Android Vector Drawable の `pathData` / `fillColor` を読み出して SVG に載せ替える。想定外の要素・属性が現れたらエラーで落ちる |
+| `adaptive_icon_to_svg.py` | Adaptive Icon の background / foreground の参照をたどってリソースを解決し、1 枚の SVG に変換する。想定外の要素・属性が現れたらエラーで落ちる |
 | `generate_mipmaps.sh` | 上記を経由して `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png`（48 / 72 / 96 / 144 / 192 px）を再生成する |
+
+レイヤーの中身を直した場合も、`ic_launcher.xml` のレイヤー参照そのものを差し替えた場合も、再生成すればレガシー側が追従する。ラスタライズ用の SVG を別に持たないので、図像が二重管理になることはない。
+
+なお `<monochrome>` はランチャーがテーマアイコン用に単色化して使うレイヤーで、ラスタには現れないため無視している。
 
 ## レガシー mipmap を出荷している理由
 
@@ -24,3 +28,9 @@ minSdk は 28 なので、端末上は `mipmap-anydpi-v26` の Adaptive Icon だ
 ```
 
 Adaptive Icon を変更したら再実行して、出力をコミットする。同じ入力からはバイト単位で同じ PNG が出る。
+
+変更が反映されたことは、生成された PNG を見るか、`git status` に差分が出ることで確認できる。レイヤー参照の差し替えが効いているかを単体で確かめるなら、SVG を直接覗くのが早い。
+
+```bash
+python3 docs/superpowers/assets/icon/adaptive_icon_to_svg.py app/src/main/res
+```
