@@ -21,7 +21,7 @@ class RefreshArticleAction : ActionCallback {
 
         EntryPointAccessors.fromApplication(
             context.applicationContext,
-            ArticleWidgetReceiver.ArticleWidgetSchedulerEntryPoint::class.java,
+            ArticleWidgetEntryPoint::class.java,
         ).articleWidgetScheduler().requestImmediateUpdate()
     }
 }
