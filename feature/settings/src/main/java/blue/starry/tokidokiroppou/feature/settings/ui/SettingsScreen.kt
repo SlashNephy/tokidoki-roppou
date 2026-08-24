@@ -154,38 +154,11 @@ private fun SettingsContent(
                     onClick = { showIntervalDialog = true },
                 )
                 if (showIntervalDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showIntervalDialog = false },
-                        title = { Text("通知間隔") },
-                        text = {
-                            Column {
-                                ApplicationSettings.INTERVAL_OPTIONS.forEach { minutes ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                onIntervalChanged(minutes)
-                                                showIntervalDialog = false
-                                            }
-                                            .padding(vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        RadioButton(
-                                            selected = minutes == settings.notificationIntervalMinutes,
-                                            onClick = {
-                                                onIntervalChanged(minutes)
-                                                showIntervalDialog = false
-                                            },
-                                        )
-                                        Text(
-                                            text = ApplicationSettings.intervalDisplayText(minutes),
-                                            modifier = Modifier.padding(start = 8.dp),
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        confirmButton = {},
+                    IntervalPickerDialog(
+                        title = "通知間隔",
+                        selectedMinutes = settings.notificationIntervalMinutes,
+                        onSelect = onIntervalChanged,
+                        onDismiss = { showIntervalDialog = false },
                     )
                 }
 
@@ -235,38 +208,11 @@ private fun SettingsContent(
                     onClick = { showWidgetIntervalDialog = true },
                 )
                 if (showWidgetIntervalDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showWidgetIntervalDialog = false },
-                        title = { Text("ウィジェットの更新間隔") },
-                        text = {
-                            Column {
-                                ApplicationSettings.INTERVAL_OPTIONS.forEach { minutes ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                onWidgetUpdateIntervalChanged(minutes)
-                                                showWidgetIntervalDialog = false
-                                            }
-                                            .padding(vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        RadioButton(
-                                            selected = minutes == settings.widgetUpdateIntervalMinutes,
-                                            onClick = {
-                                                onWidgetUpdateIntervalChanged(minutes)
-                                                showWidgetIntervalDialog = false
-                                            },
-                                        )
-                                        Text(
-                                            text = ApplicationSettings.intervalDisplayText(minutes),
-                                            modifier = Modifier.padding(start = 8.dp),
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        confirmButton = {},
+                    IntervalPickerDialog(
+                        title = "ウィジェットの更新間隔",
+                        selectedMinutes = settings.widgetUpdateIntervalMinutes,
+                        onSelect = onWidgetUpdateIntervalChanged,
+                        onDismiss = { showWidgetIntervalDialog = false },
                     )
                 }
             }
@@ -387,6 +333,48 @@ private fun SettingsContent(
             },
         )
     }
+}
+
+@Composable
+private fun IntervalPickerDialog(
+    title: String,
+    selectedMinutes: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                ApplicationSettings.INTERVAL_OPTIONS.forEach { minutes ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onSelect(minutes)
+                                onDismiss()
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = minutes == selectedMinutes,
+                            onClick = {
+                                onSelect(minutes)
+                                onDismiss()
+                            },
+                        )
+                        Text(
+                            text = ApplicationSettings.intervalDisplayText(minutes),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+    )
 }
 
 @Composable
