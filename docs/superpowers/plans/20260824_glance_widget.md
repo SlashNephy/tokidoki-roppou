@@ -1025,6 +1025,7 @@ class ArticleWidgetReceiver : GlanceAppWidgetReceiver() {
 
 ```kotlin
 import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetScheduler
+import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetUpdater
 ```
 
 `cacheRefreshScheduler` の宣言の次に追加:
@@ -1032,15 +1033,22 @@ import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetScheduler
 ```kotlin
     @Inject
     lateinit var widgetScheduler: ArticleWidgetScheduler
+
+    @Inject
+    lateinit var widgetUpdater: ArticleWidgetUpdater
 ```
 
 `onCreate()` の末尾（通知のスケジュール処理の直後）に追加:
 
 ```kotlin
         // ウィジェットが配置されている場合のみ定期更新をスケジュールする
-        // (未配置なら Worker 側が即座に success を返す)
-        widgetScheduler.schedule(settings.widgetUpdateIntervalMinutes)
+        // (未配置のまま periodic work を残すと、間隔ごとに無駄にプロセスが起こされる)
+        if (runBlocking { widgetUpdater.hasPlacedWidget() }) {
+            widgetScheduler.schedule(settings.widgetUpdateIntervalMinutes)
+        }
 ```
+
+`runBlocking` は既に `settingsRepository.get()` で使われているものと同じ import を使う。
 
 - [ ] **Step 9: ビルドとテストを確認**
 
@@ -1185,12 +1193,14 @@ Co-Authored-By: Claude Fable 6 <noreply@anthropic.com>"
 
 ```kotlin
 import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetScheduler
+import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetUpdater
 ```
 
 コンストラクタの `private val scheduler: ArticleNotificationScheduler,` の次の行に追加:
 
 ```kotlin
     private val widgetScheduler: ArticleWidgetScheduler,
+    private val widgetUpdater: ArticleWidgetUpdater,
 ```
 
 `setExcludeSupplementaryProvisions` の実装の直後に追加:
@@ -1199,7 +1209,11 @@ import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetScheduler
     fun setWidgetUpdateInterval(minutes: Int) {
         viewModelScope.launch {
             settingsRepository.setWidgetUpdateIntervalMinutes(minutes)
-            widgetScheduler.schedule(minutes)
+            // 未配置のときはスケジュールしない。
+            // 次にウィジェットが配置された際、onEnabled が保存済みの間隔で登録する
+            if (widgetUpdater.hasPlacedWidget()) {
+                widgetScheduler.schedule(minutes)
+            }
         }
     }
 ```
@@ -1380,7 +1394,7 @@ gh pr view --json mergeable,mergeStateStatus
 | 本体タップでディープリンク | Task 3 |
 | 抽選失敗時は前回表示を維持し `retry()` | Task 4 Step 2 |
 | 初回で条文が無い場合のフォールバック | Task 3 Step 4 |
-| ウィジェット未配置時は Worker をスケジュールしない | Task 4 Step 7（`onDisabled` で cancel）+ Worker 側の早期 return |
+| ウィジェット未配置時は Worker をスケジュールしない | Task 4 Step 7（`onEnabled` で登録・`onDisabled` で cancel）、Task 4 Step 8（起動時は `hasPlacedWidget()` で判定）、Task 6 Step 1（設定変更時も同様に判定） |
 | `libs.versions.toml` で glance を管理 | Task 1 Step 1 |
 | テスト・lint・実機検証 | Task 2 / Task 7 |
 
