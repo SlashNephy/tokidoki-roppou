@@ -46,7 +46,7 @@
 
 `ArticleWidgetWorker` と `ArticleWidgetScheduler` を `core:data` に置く理由は、`feature:widget` から `core:data` への一方向依存を保ちつつ、`app` と `feature:settings` の双方からスケジューラを呼べるようにするため。既存の `ArticleNotificationWorker` / `ArticleNotificationScheduler` と同じ場所・同じ形になる。
 
-Worker から Glance の state を更新するには `core:data` にも glance-appwidget が必要になる。`ArticleWidget` クラス自体は `feature:widget` にあるため、Worker はウィジェットの更新を **`ArticleWidgetUpdater` インターフェース経由**で行い、実装を `feature:widget` に置く（Task 4 で定義）。
+`ArticleWidget` クラスは `feature:widget` にあるため、`core:data` の Worker からは直接触れない。Worker はウィジェットの更新を **`ArticleWidgetUpdater` インターフェース経由**で行い、実装を `feature:widget` に置く（Task 4 で定義）。この依存性逆転により `core:data` に glance の依存は不要のままとなる。
 
 **変更**
 
@@ -55,11 +55,9 @@ Worker から Glance の state を更新するには `core:data` にも glance-a
 | `gradle/libs.versions.toml` | glance の version / library を追加 |
 | `settings.gradle.kts` | `include(":feature:widget")` |
 | `app/build.gradle.kts` | `implementation(project(":feature:widget"))` |
-| `core/data/build.gradle.kts` | glance-appwidget を追加 |
 | `.../core/domain/model/ApplicationSettings.kt` | `widgetUpdateIntervalMinutes` を追加 |
 | `.../core/domain/repository/ApplicationSettingsRepository.kt` | `setWidgetUpdateIntervalMinutes` を追加 |
 | `.../core/data/repository/ApplicationSettingsRepositoryImpl.kt` | 上記の実装と DataStore キー |
-| `.../core/data/di/DataModule.kt` | `ArticleWidgetUpdater` のバインド |
 | `.../feature/settings/ui/SettingsScreenViewModel.kt` | `setWidgetUpdateInterval` |
 | `.../feature/settings/ui/SettingsScreen.kt` | 「ウィジェット」セクション |
 | `.../TokidokiRoppouApplication.kt` | 起動時のウィジェット再スケジュール |
