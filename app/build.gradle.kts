@@ -99,6 +99,7 @@ dependencies {
     implementation(project(":feature:laws"))
     implementation(project(":feature:collection"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:widget"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

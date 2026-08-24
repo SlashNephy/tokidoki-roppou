@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">ときどき六法</string>
+    <string name="widget_description">ランダムな条文を表示します</string>
+    <string name="widget_refresh_content_description">別の条文を表示</string>
+    <string name="widget_empty_message">条文を読み込めませんでした</string>
+</resources>

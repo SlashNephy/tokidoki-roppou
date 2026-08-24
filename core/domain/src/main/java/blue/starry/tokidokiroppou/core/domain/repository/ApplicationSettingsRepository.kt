@@ -18,4 +18,6 @@ interface ApplicationSettingsRepository {
     suspend fun setUseHalfWidthParentheses(enabled: Boolean)
 
     suspend fun setExcludeSupplementaryProvisions(enabled: Boolean)
+
+    suspend fun setWidgetUpdateIntervalMinutes(minutes: Int)
 }

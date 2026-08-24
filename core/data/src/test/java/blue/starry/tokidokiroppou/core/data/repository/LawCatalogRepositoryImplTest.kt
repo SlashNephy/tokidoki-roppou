@@ -206,6 +206,9 @@ class LawCatalogRepositoryImplTest {
 
         override suspend fun setExcludeSupplementaryProvisions(enabled: Boolean) {
         }
+
+        override suspend fun setWidgetUpdateIntervalMinutes(minutes: Int) {
+        }
     }
 
 }

@@ -76,9 +76,13 @@ fun App() {
         val lawId = intent?.getStringExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
         val articleNumber = intent?.getStringExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
         if (lawId != null && articleNumber != null) {
+            val supplementaryProvisionLabel = intent
+                .getStringExtra(ArticleNotificationSender.EXTRA_SUPPLEMENTARY_PROVISION_LABEL)
+                ?.takeIf { it.isNotEmpty() }
             intent.removeExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
             intent.removeExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
-            HomeRoute(lawId, articleNumber)
+            intent.removeExtra(ArticleNotificationSender.EXTRA_SUPPLEMENTARY_PROVISION_LABEL)
+            HomeRoute(lawId, articleNumber, supplementaryProvisionLabel)
         } else {
             HomeRoute()
         }
@@ -93,11 +97,15 @@ fun App() {
                 ?: return@Consumer
             val articleNumber = intent.getStringExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
                 ?: return@Consumer
+            val supplementaryProvisionLabel = intent
+                .getStringExtra(ArticleNotificationSender.EXTRA_SUPPLEMENTARY_PROVISION_LABEL)
+                ?.takeIf { it.isNotEmpty() }
             intent.removeExtra(ArticleNotificationSender.EXTRA_LAW_CODE)
             intent.removeExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER)
+            intent.removeExtra(ArticleNotificationSender.EXTRA_SUPPLEMENTARY_PROVISION_LABEL)
             // バックスタックをクリアしてホーム画面に遷移
             backStack.clear()
-            backStack.add(HomeRoute(lawId, articleNumber))
+            backStack.add(HomeRoute(lawId, articleNumber, supplementaryProvisionLabel))
         }
         activity?.addOnNewIntentListener(listener)
         onDispose {

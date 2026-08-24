@@ -5,6 +5,8 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import blue.starry.tokidokiroppou.core.data.notification.ArticleNotificationSender
 import blue.starry.tokidokiroppou.core.data.worker.ArticleNotificationScheduler
+import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetScheduler
+import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetUpdater
 import blue.starry.tokidokiroppou.core.data.worker.CacheRefreshScheduler
 import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepository
 import com.google.firebase.Firebase
@@ -30,6 +32,12 @@ class TokidokiRoppouApplication : Application(), Configuration.Provider {
 
     @Inject
     lateinit var cacheRefreshScheduler: CacheRefreshScheduler
+
+    @Inject
+    lateinit var widgetScheduler: ArticleWidgetScheduler
+
+    @Inject
+    lateinit var widgetUpdater: ArticleWidgetUpdater
 
     @Inject
     lateinit var appCheckProviderFactory: AppCheckProviderFactory
@@ -69,6 +77,12 @@ class TokidokiRoppouApplication : Application(), Configuration.Provider {
         val settings = runBlocking { settingsRepository.get() }
         if (settings.isNotificationEnabled) {
             notificationScheduler.schedule(settings.notificationIntervalMinutes)
+        }
+
+        // ウィジェットが配置されている場合のみ定期更新をスケジュールする
+        // (未配置のまま periodic work を残すと、間隔ごとに無駄にプロセスが起こされる)
+        if (runBlocking { widgetUpdater.hasPlacedWidget() }) {
+            widgetScheduler.schedule(settings.widgetUpdateIntervalMinutes)
         }
     }
 }

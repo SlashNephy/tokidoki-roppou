@@ -12,8 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # ビルド (Staging Debug)
 ./gradlew assembleStagingDebug
 
-# ユニットテスト
-./gradlew testStagingDebugUnitTest
+# ユニットテスト (全モジュール)
+# staging フレーバーは app にしかないため、testStagingDebugUnitTest では 1 件も実行されない
+./gradlew test
 
 # Android Lint
 ./gradlew lintStagingDebug
@@ -42,9 +43,13 @@ app                              ← エントリーポイント (Activity, Navi
 │   └── core:domain, core:data, core:ui
 ├── feature:laws                 ← 法令一覧・検索画面
 │   └── core:domain, core:data, core:ui
-└── feature:settings             ← 設定画面
-    └── core:domain, core:data, core:ui
+├── feature:settings             ← 設定画面
+│   └── core:domain, core:data, core:ui
+└── feature:widget               ← ホーム画面ウィジェット (Glance)
+    └── core:domain, core:data
 ```
+
+`feature:widget` は Glance (RemoteViews) で描画するため、Compose UI 前提の `core:ui` には依存しない。
 
 ### パッケージルート
 
@@ -53,9 +58,10 @@ app                              ← エントリーポイント (Activity, Navi
 ### レイヤー構造
 
 - **core:domain** — ビジネスモデル (`Article`, `LawCode`, `ApplicationSettings`)、リポジトリインターフェース (`LawRepository`, `ApplicationSettingsRepository`)、テキスト処理ロジック (`TextNormalizer`, `ArticleReferenceExtractor`)
-- **core:data** — リポジトリ実装、e-Gov 法令 API クライアント (`EGovLawApiClient`)、Room DB (`AppDatabase`)、WorkManager タスク (通知: `ArticleNotificationWorker`, キャッシュ更新: `CacheRefreshWorker`)、Hilt DI モジュール
+- **core:data** — リポジトリ実装、e-Gov 法令 API クライアント (`EGovLawApiClient`)、Room DB (`AppDatabase`)、WorkManager タスク (通知: `ArticleNotificationWorker`, キャッシュ更新: `CacheRefreshWorker`, ウィジェット更新: `ArticleWidgetWorker`)、Hilt DI モジュール
 - **core:ui** — `ArticleCard`, `SettingSection`, `SettingItem` など共有 Composable
 - **feature/*** — 各画面の `Screen` (Composable) + `ViewModel` のペア
+- **feature:widget** — Glance ウィジェット (`ArticleWidget`)。条文の抽選は `core:data` の `ArticleWidgetWorker` が行い、ウィジェットの更新は `ArticleWidgetUpdater` インターフェース経由で `core:data` から呼ばれる (依存性逆転)
 
 ### DI
 
