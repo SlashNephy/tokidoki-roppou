@@ -244,7 +244,7 @@ class ArticleWidgetReceiver : GlanceAppWidgetReceiver() {
 - [ ] **Step 10: ビルドが通ることを確認**
 
 ```bash
-./gradlew :feature:widget:assembleLocalDebug :app:assembleLocalDebug
+./gradlew :feature:widget:assembleDebug :app:assembleLocalDebug
 ```
 
 期待: `BUILD SUCCESSFUL`
@@ -697,7 +697,7 @@ class ArticleWidget : GlanceAppWidget() {
 - [ ] **Step 7: ビルドと lint を確認**
 
 ```bash
-./gradlew :feature:widget:assembleLocalDebug :app:lintStagingDebug
+./gradlew :feature:widget:assembleDebug :app:lintStagingDebug
 ```
 
 期待: `BUILD SUCCESSFUL`
