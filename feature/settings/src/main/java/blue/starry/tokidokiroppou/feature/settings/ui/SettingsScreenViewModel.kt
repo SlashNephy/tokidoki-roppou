@@ -154,6 +154,8 @@ class SettingsScreenViewModel @Inject constructor(
     fun setUseHalfWidthParentheses(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setUseHalfWidthParentheses(enabled)
+            // 設定の保存後に再描画する。ウィジェットは再描画時に最新の設定を読み直すため、この順序が必要
+            widgetUpdater.rerenderAll()
         }
     }
 

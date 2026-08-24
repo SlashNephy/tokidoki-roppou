@@ -33,6 +33,18 @@ class ArticleWidgetUpdaterImpl @Inject constructor(
         Timber.d("Updated %d widget(s)", glanceIds.size)
     }
 
+    override suspend fun rerenderAll() {
+        if (!hasPlacedWidget()) {
+            Timber.d("Skipped rerender because no widget is placed")
+            return
+        }
+
+        // state (条文の identity) は書き換えない。updateAll を呼ぶだけで provideGlance が再実行され、
+        // state から条文を引き直した上で最新の表示設定 (useHalfWidthParentheses 等) を反映して描画される。
+        ArticleWidget().updateAll(context)
+        Timber.d("Rerendered widget(s) without changing article")
+    }
+
     override suspend fun hasPlacedWidget(): Boolean {
         return GlanceAppWidgetManager(context).getGlanceIds(ArticleWidget::class.java).isNotEmpty()
     }

@@ -10,6 +10,12 @@ interface ArticleWidgetUpdater {
     /** 全てのウィジェットに条文を反映する */
     suspend fun updateAll(article: Article)
 
+    /**
+     * 条文は変えずに、全てのウィジェットを再描画する。
+     * 表示設定 (半角括弧表記など) の変更を、次回の定期更新を待たずに反映するために使う。
+     */
+    suspend fun rerenderAll()
+
     /** ウィジェットが 1 つ以上配置されているか */
     suspend fun hasPlacedWidget(): Boolean
 }

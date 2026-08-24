@@ -169,6 +169,8 @@ class ArticleWidgetRefresherTest {
             lastUpdatedArticle = article
         }
 
+        override suspend fun rerenderAll() = Unit
+
         override suspend fun hasPlacedWidget(): Boolean = hasPlacedWidget
     }
 }
