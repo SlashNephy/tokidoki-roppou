@@ -77,6 +77,12 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun setWidgetUpdateIntervalMinutes(minutes: Int) {
+        dataStore.edit { preferences ->
+            preferences[KEY_WIDGET_UPDATE_INTERVAL] = minutes
+        }
+    }
+
     private fun Preferences.toApplicationSettings(): ApplicationSettings {
         val enabledLawIds = this[KEY_ENABLED_LAW_CODES]
             ?.normalizeEnabledLawIds()
@@ -89,6 +95,7 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
             isNotificationEnabled = this[KEY_NOTIFICATION_ENABLED] ?: true,
             useHalfWidthParentheses = this[KEY_USE_HALF_WIDTH_PARENTHESES] ?: false,
             excludeSupplementaryProvisions = this[KEY_EXCLUDE_SUPPLEMENTARY_PROVISIONS] ?: false,
+            widgetUpdateIntervalMinutes = this[KEY_WIDGET_UPDATE_INTERVAL] ?: 60,
         )
     }
 
@@ -124,5 +131,6 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
         private val KEY_ENABLED_LAW_CODES = stringSetPreferencesKey("enabled_law_codes")
         private val KEY_USE_HALF_WIDTH_PARENTHESES = booleanPreferencesKey("use_half_width_parentheses")
         private val KEY_EXCLUDE_SUPPLEMENTARY_PROVISIONS = booleanPreferencesKey("exclude_supplementary_provisions")
+        private val KEY_WIDGET_UPDATE_INTERVAL = intPreferencesKey("widget_update_interval")
     }
 }

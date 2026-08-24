@@ -24,6 +24,7 @@ class ApplicationSettingsRepositoryImplTest {
     private val enabledLawCodesKey = stringSetPreferencesKey("enabled_law_codes")
     private val useHalfWidthParenthesesKey = booleanPreferencesKey("use_half_width_parentheses")
     private val excludeSupplementaryProvisionsKey = booleanPreferencesKey("exclude_supplementary_provisions")
+    private val widgetUpdateIntervalKey = intPreferencesKey("widget_update_interval")
 
     @Test
     fun getMigratesStoredLegacyLawCodeNamesToLawIdsAndWritesBack() = runTest {
@@ -132,6 +133,29 @@ class ApplicationSettingsRepositoryImplTest {
                 setOf("140AC0000000045"),
                 testEnvironment.dataStore.data.first()[enabledLawCodesKey],
             )
+        } finally {
+            testEnvironment.close()
+        }
+    }
+
+    @Test
+    fun setWidgetUpdateIntervalMinutesPersistsValueAndIsReadBack() = runTest {
+        val testEnvironment = createTestEnvironment()
+        try {
+            testEnvironment.repository.setWidgetUpdateIntervalMinutes(240)
+
+            assertEquals(240, testEnvironment.dataStore.data.first()[widgetUpdateIntervalKey])
+            assertEquals(240, testEnvironment.repository.get().widgetUpdateIntervalMinutes)
+        } finally {
+            testEnvironment.close()
+        }
+    }
+
+    @Test
+    fun getFallsBackToOneHourWhenWidgetUpdateIntervalIsAbsent() = runTest {
+        val testEnvironment = createTestEnvironment()
+        try {
+            assertEquals(60, testEnvironment.repository.get().widgetUpdateIntervalMinutes)
         } finally {
             testEnvironment.close()
         }

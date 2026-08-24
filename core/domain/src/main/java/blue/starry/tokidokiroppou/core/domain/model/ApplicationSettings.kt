@@ -9,6 +9,7 @@ data class ApplicationSettings(
     val isNotificationEnabled: Boolean = true,
     val useHalfWidthParentheses: Boolean = false,
     val excludeSupplementaryProvisions: Boolean = false,
+    val widgetUpdateIntervalMinutes: Int = 60,
 ) {
     val notificationInterval: Duration
         get() = notificationIntervalMinutes.toLong().let { Duration.parse("${it}m") }
