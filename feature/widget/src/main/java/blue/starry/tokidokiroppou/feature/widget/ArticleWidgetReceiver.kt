@@ -5,7 +5,12 @@ import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import dagger.hilt.android.EntryPointAccessors
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class ArticleWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = ArticleWidget()
@@ -13,12 +18,29 @@ class ArticleWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
 
-        val entryPoint = entryPointOf(context)
-        val scheduler = entryPoint.articleWidgetScheduler()
-        val intervalMinutes = runBlocking {
-            entryPoint.applicationSettingsRepository().get().widgetUpdateIntervalMinutes
+        // onEnabled は BroadcastReceiver のメインスレッドで呼ばれるため、
+        // DataStore の読み取りを runBlocking で待つと ANR の原因になる。
+        // goAsync() で PendingResult を確保し、その生存期間だけ有効な
+        // 一時的な CoroutineScope 上でバックグラウンド処理を行う。
+        // GlanceAppWidgetReceiver は onUpdate 等では独自に goAsync() を
+        // 使うが、onEnabled はオーバーライドしていないため衝突しない。
+        val pendingResult = goAsync()
+        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        scope.launch {
+            try {
+                val entryPoint = entryPointOf(context)
+                val scheduler = entryPoint.articleWidgetScheduler()
+                val intervalMinutes =
+                    entryPoint.applicationSettingsRepository().get().widgetUpdateIntervalMinutes
+                scheduler.schedule(intervalMinutes)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to schedule widget update in onEnabled")
+            } finally {
+                pendingResult.finish()
+            }
         }
-        scheduler.schedule(intervalMinutes)
     }
 
     override fun onUpdate(
