@@ -1,5 +1,6 @@
 package blue.starry.tokidokiroppou.feature.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -18,7 +19,21 @@ class ArticleWidgetReceiver : GlanceAppWidgetReceiver() {
             entryPoint.applicationSettingsRepository().get().widgetUpdateIntervalMinutes
         }
         scheduler.schedule(intervalMinutes)
-        scheduler.requestImmediateUpdate()
+    }
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray,
+    ) {
+        // Glance の描画は super.onUpdate() が行うため必ず呼ぶ。
+        // onUpdate は新規ウィジェット配置のたびに呼ばれる唯一の経路のため
+        // (onEnabled は最初の 1 個目が配置されたときしか呼ばれない)、
+        // ここで即時更新をリクエストして 2 個目以降が空表示のまま
+        // 放置されないようにする。
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+
+        entryPointOf(context).articleWidgetScheduler().requestImmediateUpdate()
     }
 
     override fun onDisabled(context: Context) {
