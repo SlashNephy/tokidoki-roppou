@@ -76,6 +76,10 @@ class ArticleWidget : GlanceAppWidget() {
         if (article != null) {
             intent.putExtra(ArticleNotificationSender.EXTRA_LAW_CODE, article.lawId.value)
             intent.putExtra(ArticleNotificationSender.EXTRA_ARTICLE_NUMBER, article.articleNumber)
+            intent.putExtra(
+                ArticleNotificationSender.EXTRA_SUPPLEMENTARY_PROVISION_LABEL,
+                article.supplementaryProvisionLabel ?: "",
+            )
         }
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
 

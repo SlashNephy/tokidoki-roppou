@@ -110,6 +110,7 @@ class ArticleNotificationSender @Inject constructor(
         launchIntent.apply {
             putExtra(EXTRA_LAW_CODE, article.lawId.value)
             putExtra(EXTRA_ARTICLE_NUMBER, article.articleNumber)
+            putExtra(EXTRA_SUPPLEMENTARY_PROVISION_LABEL, article.supplementaryProvisionLabel ?: "")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
@@ -178,5 +179,6 @@ class ArticleNotificationSender @Inject constructor(
         const val CHANNEL_ID = "article_notification"
         const val EXTRA_LAW_CODE = "extra_law_code"
         const val EXTRA_ARTICLE_NUMBER = "extra_article_number"
+        const val EXTRA_SUPPLEMENTARY_PROVISION_LABEL = "extra_supplementary_provision_label"
     }
 }
