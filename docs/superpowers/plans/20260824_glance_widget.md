@@ -327,7 +327,7 @@ Co-Authored-By: Claude Fable 6 <noreply@anthropic.com>"
 - [ ] **Step 2: テストが失敗することを確認**
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests '*ApplicationSettingsRepositoryImplTest*'
+./gradlew :core:data:testDebugUnitTest --tests '*ApplicationSettingsRepositoryImplTest*'
 ```
 
 期待: コンパイルエラー（`setWidgetUpdateIntervalMinutes` および `widgetUpdateIntervalMinutes` が未解決）
@@ -376,7 +376,7 @@ Co-Authored-By: Claude Fable 6 <noreply@anthropic.com>"
 - [ ] **Step 6: テストが通ることを確認**
 
 ```bash
-./gradlew :core:data:testStagingDebugUnitTest --tests '*ApplicationSettingsRepositoryImplTest*'
+./gradlew :core:data:testDebugUnitTest --tests '*ApplicationSettingsRepositoryImplTest*'
 ```
 
 期待: `BUILD SUCCESSFUL`（新規 2 件を含め全件パス）
@@ -1051,7 +1051,7 @@ import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetUpdater
 - [ ] **Step 9: ビルドとテストを確認**
 
 ```bash
-./gradlew :app:assembleLocalDebug :core:data:testStagingDebugUnitTest
+./gradlew :app:assembleLocalDebug :core:data:testDebugUnitTest
 ```
 
 期待: `BUILD SUCCESSFUL`
