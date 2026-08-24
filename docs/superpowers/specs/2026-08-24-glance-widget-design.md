@@ -28,7 +28,7 @@ plugins {
 
 依存は `:core:domain`, `:core:data` のみ。`:core:ui` には依存しない（後述）。
 
-`app` モジュールが `feature:widget` に依存し、`AndroidManifest.xml` に receiver を宣言する。
+`ArticleWidgetReceiver` と `appwidget-provider` の XML は `feature:widget` 内の `AndroidManifest.xml` / `res/xml` に置き、manifest merger で `app` に統合する。`app` は `feature:widget` に依存を追加するのみ。
 
 ### Glance は Compose UI ではない
 
