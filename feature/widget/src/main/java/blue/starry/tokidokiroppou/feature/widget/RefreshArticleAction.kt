@@ -4,11 +4,12 @@ import android.content.Context
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
+import dagger.hilt.android.EntryPointAccessors
 import timber.log.Timber
 
 /**
- * リロードアイコンのタップを受け取る仮実装。
- * 実際の条文再抽選と Worker 起動は Task 5 で実装する。
+ * リロードボタン。
+ * ActionCallback は Hilt 非対応のため、抽選ロジックは持たず Worker の起動だけを行う。
  */
 class RefreshArticleAction : ActionCallback {
     override suspend fun onAction(
@@ -17,5 +18,10 @@ class RefreshArticleAction : ActionCallback {
         parameters: ActionParameters,
     ) {
         Timber.d("Widget refresh requested")
+
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ArticleWidgetReceiver.ArticleWidgetSchedulerEntryPoint::class.java,
+        ).articleWidgetScheduler().requestImmediateUpdate()
     }
 }
