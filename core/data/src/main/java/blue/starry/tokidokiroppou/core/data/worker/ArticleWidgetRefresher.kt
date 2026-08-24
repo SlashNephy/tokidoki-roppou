@@ -4,6 +4,8 @@ import blue.starry.tokidokiroppou.core.domain.repository.ApplicationSettingsRepo
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 
 /**
@@ -18,11 +20,16 @@ class ArticleWidgetRefresher @Inject constructor(
     private val settingsRepository: ApplicationSettingsRepository,
     private val widgetUpdater: ArticleWidgetUpdater,
 ) {
+    // 周期更新と即時更新は別々の unique work 名で管理されており WorkManager 側では
+    // 同時実行され得るため、ここで直列化して「全ウィジェットは常に同じ条文を表示する」
+    // という前提を守る。
+    private val mutex = Mutex()
+
     /** ウィジェットの表示内容を更新すべきか判断し、実行する */
-    suspend fun refresh(): Outcome {
+    suspend fun refresh(): Outcome = mutex.withLock {
         if (!widgetUpdater.hasPlacedWidget()) {
             Timber.d("No widget placed, skipping")
-            return Outcome.NoWidgetPlaced
+            return@withLock Outcome.NoWidgetPlaced
         }
 
         val settings = settingsRepository.get()
@@ -32,11 +39,11 @@ class ArticleWidgetRefresher @Inject constructor(
         )
         if (article == null) {
             Timber.w("No article found for widget")
-            return Outcome.ArticleNotFound
+            return@withLock Outcome.ArticleNotFound
         }
 
         widgetUpdater.updateAll(article)
-        return Outcome.Updated
+        Outcome.Updated
     }
 
     /** [refresh] の結果 */
