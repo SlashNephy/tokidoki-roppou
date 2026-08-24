@@ -541,8 +541,8 @@ fun ArticleWidgetContent(
         if (article == null) {
             Column(
                 modifier = GlanceModifier.fillMaxSize(),
-                verticalAlignment = Alignment.Vertical.CenterVertically,
-                horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = context.getString(R.string.widget_empty_message),
@@ -1411,6 +1411,5 @@ gh pr view --json mergeable,mergeStateStatus
 
 **4. 実装時に確認が必要な点**
 
-- `Alignment.Vertical.CenterVertically` / `Alignment.Horizontal.CenterHorizontally` の指定方法は Glance の Column のシグネチャに合わせる（`Alignment.CenterVertically` で足りる場合がある）
 - `GlanceTheme.colors.onSurfaceVariant` が glance-material3 の `ColorProviders` に存在することをビルドで確認する
 - `ic_notification` の R クラス参照（`blue.starry.tokidokiroppou.core.data.R`）が `implementation` 依存で解決できること
