@@ -89,12 +89,30 @@ Glance の `PreferencesGlanceStateDefinition` に、条文の **identity のみ*
 - `TitleBar` の `startIcon` にアプリアイコン、`title` に法令名（`LawCatalogRepository.getLaw(lawId)?.displayName`）、`actions` にリロードの `CircleIconButton(backgroundColor = null)` を置く
 - `TitleBar` の title は `maxLines = 1` かつ `defaultWeight()` で描画されるため、法令名が横幅に入り切らない場合は自動的に末尾が省略される。追加の実装は不要
 - 条文名は `article.displayTitle(useHalfWidthParentheses)`、本文は `article.fullText(useHalfWidthParentheses)`
-- 本文は `maxLines` を指定せず、ウィジェットの高さに応じて溢れをクリップさせる。全文はタップしてアプリで読む
+- 条文名は `maxLines = 1` でクランプし、横幅に入り切らない場合は末尾を省略する
+- 本文は `LazyColumn` の単一アイテムに入れてスクロールできるようにする。Glance に汎用の縦スクロール修飾子はないため Lazy 系を使う
 - 色は `GlanceTheme.colors`（`androidx.glance.GlanceTheme`、`glance-appwidget` 由来）で Dynamic Color に追従する。`glance-material3` には依存しない
+
+#### 本文をスクロールさせることの代償
+
+`LazyColumn` は RemoteViews の `ListView` にコンパイルされ、ListView がタッチを消費する。そのため
+**本文タップではアプリを開けない**。実機で検証した結果は次のとおり。
+
+| タップ位置 | アプリが開くか |
+| --- | --- |
+| 本文（ListView 内） | 開かない |
+| 条文名の行（ListView の外） | 開く |
+| TitleBar の法令名 | 開く |
+
+遷移導線は TitleBar と条文名の行の 2 箇所で確保する。段落ごとにアイテムを分けても
+ListView である点は変わらないため、この代償は回避できない。
+
+また `LazyColumn` の KDoc にあるとおり、`itemId` を明示してもスクロール位置がウィジェット更新を
+またいで保たれるのは API 31 以降。minSdk 28 なので、それ未満の端末では更新のたびに先頭へ戻る。
 
 ### タップ挙動
 
-本体タップで `lawCode` / `articleNumber` の extra 付きで `MainActivity` を起動し、HomeScreen にディープリンクする。extra のキーは通知と同じ `ArticleNotificationSender.EXTRA_LAW_CODE` / `EXTRA_ARTICLE_NUMBER` を再利用し、`app` 側の受け口を共通化する。
+TitleBar と条文名の行のタップで `lawCode` / `articleNumber` / `supplementaryProvisionLabel` の extra 付きで `MainActivity` を起動し、HomeScreen にディープリンクする。extra のキーは通知と同じ `ArticleNotificationSender.EXTRA_LAW_CODE` / `EXTRA_ARTICLE_NUMBER` を再利用し、`app` 側の受け口を共通化する。
 
 ## 設定
 
