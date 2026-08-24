@@ -42,7 +42,7 @@ fun ArticleWidgetContent(
                 modifier = GlanceModifier.clickable(launchAction),
             )
         },
-        modifier = GlanceModifier.fillMaxSize(),
+        modifier = GlanceModifier.fillMaxSize().padding(bottom = 12.dp),
     ) {
         when (article) {
             null -> EmptyContent(

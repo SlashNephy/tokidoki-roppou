@@ -11,7 +11,7 @@ object WidgetTextStyle {
     @Composable
     get() = TextDefaults.defaultTextStyle.copy(
       color = GlanceTheme.colors.onSurfaceVariant,
-      fontSize = 12.sp,
+      fontSize = 14.sp,
       fontWeight = FontWeight.Medium,
     )
 
@@ -19,7 +19,7 @@ object WidgetTextStyle {
     @Composable
     get() = TextDefaults.defaultTextStyle.copy(
       color = GlanceTheme.colors.onSurface,
-      fontSize = 14.sp,
+      fontSize = 16.sp,
     )
 
   val Supporting
