@@ -3,6 +3,8 @@
     android:description="@string/widget_description"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:minHeight="110dp"
+    android:minResizeHeight="70dp"
+    android:minResizeWidth="120dp"
     android:minWidth="180dp"
     android:resizeMode="horizontal|vertical"
     android:targetCellHeight="2"
