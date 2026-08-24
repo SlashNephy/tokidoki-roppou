@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TextFormat
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -98,6 +99,7 @@ fun SettingsScreen(
             onAddCatalogLaw = viewModel::addLawForNotifications,
             onUseHalfWidthParenthesesChanged = viewModel::setUseHalfWidthParentheses,
             onExcludeSupplementaryProvisionsChanged = viewModel::setExcludeSupplementaryProvisions,
+            onWidgetUpdateIntervalChanged = viewModel::setWidgetUpdateInterval,
             onClearCacheAndRefresh = viewModel::clearCacheAndRefresh,
         )
     }
@@ -120,6 +122,7 @@ private fun SettingsContent(
     onAddCatalogLaw: (Law) -> Unit,
     onUseHalfWidthParenthesesChanged: (Boolean) -> Unit,
     onExcludeSupplementaryProvisionsChanged: (Boolean) -> Unit,
+    onWidgetUpdateIntervalChanged: (Int) -> Unit,
     onClearCacheAndRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -219,6 +222,53 @@ private fun SettingsContent(
                         onUseHalfWidthParenthesesChanged(!settings.useHalfWidthParentheses)
                     },
                 )
+            }
+        }
+
+        item {
+            SettingSection(title = "ウィジェット") {
+                var showWidgetIntervalDialog by remember { mutableStateOf(false) }
+                SettingItem(
+                    headline = "更新間隔",
+                    supporting = ApplicationSettings.intervalDisplayText(settings.widgetUpdateIntervalMinutes),
+                    leadingIcon = Icons.Default.Widgets,
+                    onClick = { showWidgetIntervalDialog = true },
+                )
+                if (showWidgetIntervalDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showWidgetIntervalDialog = false },
+                        title = { Text("ウィジェットの更新間隔") },
+                        text = {
+                            Column {
+                                ApplicationSettings.INTERVAL_OPTIONS.forEach { minutes ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                onWidgetUpdateIntervalChanged(minutes)
+                                                showWidgetIntervalDialog = false
+                                            }
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        RadioButton(
+                                            selected = minutes == settings.widgetUpdateIntervalMinutes,
+                                            onClick = {
+                                                onWidgetUpdateIntervalChanged(minutes)
+                                                showWidgetIntervalDialog = false
+                                            },
+                                        )
+                                        Text(
+                                            text = ApplicationSettings.intervalDisplayText(minutes),
+                                            modifier = Modifier.padding(start = 8.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {},
+                    )
+                }
             }
         }
 

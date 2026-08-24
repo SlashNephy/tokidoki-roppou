@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import blue.starry.tokidokiroppou.core.data.repository.LawRepositoryImpl
 import blue.starry.tokidokiroppou.core.data.worker.ArticleNotificationScheduler
+import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetScheduler
+import blue.starry.tokidokiroppou.core.data.worker.ArticleWidgetUpdater
 import blue.starry.tokidokiroppou.core.domain.model.ApplicationSettings
 import blue.starry.tokidokiroppou.core.domain.model.Law
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
@@ -31,6 +33,8 @@ class SettingsScreenViewModel @Inject constructor(
     private val lawRepository: LawRepositoryImpl,
     private val lawCatalogRepository: LawCatalogRepository,
     private val scheduler: ArticleNotificationScheduler,
+    private val widgetScheduler: ArticleWidgetScheduler,
+    private val widgetUpdater: ArticleWidgetUpdater,
 ) : ViewModel() {
 
     val settings: StateFlow<ApplicationSettings?> = settingsRepository.observe()
@@ -156,6 +160,17 @@ class SettingsScreenViewModel @Inject constructor(
     fun setExcludeSupplementaryProvisions(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setExcludeSupplementaryProvisions(enabled)
+        }
+    }
+
+    fun setWidgetUpdateInterval(minutes: Int) {
+        viewModelScope.launch {
+            settingsRepository.setWidgetUpdateIntervalMinutes(minutes)
+            // 未配置のときはスケジュールしない。
+            // 次にウィジェットが配置された際、onEnabled が保存済みの間隔で登録する
+            if (widgetUpdater.hasPlacedWidget()) {
+                widgetScheduler.schedule(minutes)
+            }
         }
     }
 
