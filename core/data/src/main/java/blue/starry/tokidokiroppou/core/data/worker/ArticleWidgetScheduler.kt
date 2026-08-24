@@ -22,9 +22,13 @@ class ArticleWidgetScheduler @Inject constructor(
             TimeUnit.MINUTES,
         ).build()
 
+        // UPDATE は間隔変更を反映しつつ既存の周期を維持する。
+        // CANCEL_AND_REENQUEUE だと Application#onCreate のたびに周期が
+        // 0 から測り直しになり、頻繁にアプリを開くユーザーで自動更新が
+        // 慢性的に遅延するため使わない。
         workManager.enqueueUniquePeriodicWork(
             ArticleWidgetWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
+            ExistingPeriodicWorkPolicy.UPDATE,
             workRequest,
         )
 
@@ -33,6 +37,7 @@ class ArticleWidgetScheduler @Inject constructor(
 
     fun cancel() {
         workManager.cancelUniqueWork(ArticleWidgetWorker.WORK_NAME)
+        workManager.cancelUniqueWork(IMMEDIATE_WORK_NAME)
         Timber.d("Cancelled widget update worker")
     }
 
