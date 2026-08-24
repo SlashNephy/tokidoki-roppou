@@ -13,5 +13,7 @@ dependencies {
     implementation(project(":core:data"))
 
     implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.preview)
     implementation(libs.timber)
+    debugImplementation(libs.androidx.glance.appwidget.preview)
 }
