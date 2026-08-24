@@ -20,7 +20,7 @@
 - コード内のコメントと UI 文言は日本語、ログとエラーメッセージは英語
 - コミットメッセージは Conventional Commits 形式。`Co-Authored-By: Claude Fable 6 <noreply@anthropic.com>` を付与する
 - ソースコードのパターンを検査するようなテスト、定数をコピーと比較するだけのテストは書かない
-- ビルドフレーバーは `local`（既定）/ `staging` / `production`。実機確認は `assembleLocalDebug`、テストは `testStagingDebugUnitTest`、lint は `lintStagingDebug`
+- ビルドフレーバーは `local`（既定）/ `staging` / `production`。実機確認は `assembleLocalDebug`、テストは `test`、lint は `lintStagingDebug`
 
 ---
 
@@ -1328,7 +1328,7 @@ Co-Authored-By: Claude Fable 6 <noreply@anthropic.com>"
 - [ ] **Step 1: 全テストを実行**
 
 ```bash
-./gradlew testStagingDebugUnitTest
+./gradlew test
 ```
 
 期待: `BUILD SUCCESSFUL`

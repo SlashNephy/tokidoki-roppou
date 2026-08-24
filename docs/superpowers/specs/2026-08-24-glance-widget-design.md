@@ -39,10 +39,13 @@ plugins {
 | クラス | 責務 |
 | --- | --- |
 | `ArticleWidget : GlanceAppWidget` | 描画のみ。state から条文の identity を読み、DB から解決して表示する |
-| `ArticleWidgetReceiver : GlanceAppWidgetReceiver` | ライフサイクル。`onEnabled` で Worker をスケジュールし、`onDisabled` でキャンセルする |
-| `ArticleWidgetWorker : @HiltWorker` | 抽選。`getRandomArticle` → state 更新 → `ArticleWidget().updateAll(context)` |
+| `ArticleWidgetReceiver : GlanceAppWidgetReceiver` | ライフサイクル。`onEnabled` / `onUpdate` / `onDisabled` で Worker のスケジュール・即時更新・キャンセルを行う |
+| `ArticleWidgetRefresher` | 抽選の判断ロジック。`ArticleWidgetWorker` から Android フレームワーク依存を切り離し、素の JVM ユニットテストで検証できるようにする（`core:data`） |
+| `ArticleWidgetWorker : @HiltWorker` | `ArticleWidgetRefresher.refresh()` を呼び、結果を `ListenableWorker.Result` に変換するだけの薄い殻 |
 | `ArticleWidgetScheduler` | `PeriodicWorkRequest` の登録・解除。`ArticleNotificationScheduler` と同型 |
-| `RefreshArticleAction : ActionCallback` | リロードボタン。`OneTimeWorkRequest` を enqueue するだけ |
+| `ArticleWidgetUpdater` | ウィジェットの表示内容を更新するインターフェース。Glance 実装から `core:data` を依存性逆転で切り離す（`core:data`） |
+| `ArticleWidgetUpdaterImpl` | `ArticleWidgetUpdater` の実装。Glance state の更新と `ArticleWidget().updateAll(context)` を行う（`feature:widget`） |
+| `RefreshArticleAction : ActionCallback` | リロードボタン。`ArticleWidgetScheduler.requestImmediateUpdate()` を呼ぶだけ |
 | `ArticleWidgetEntryPoint` | 描画時にリポジトリを取得するための Hilt EntryPoint |
 
 ### Hilt の扱い
@@ -52,7 +55,7 @@ plugins {
 - 条文の抽選と永続化は `@HiltWorker` である `ArticleWidgetWorker` に寄せる
 - 描画時に必要なリポジトリは `EntryPointAccessors.fromApplication()` で取得する
 
-`ActionCallback` も同様に Hilt 非対応のため、`RefreshArticleAction` は `WorkManager.getInstance(context)` 経由で Worker を enqueue するだけに留める。抽選ロジックを二重に持たない。
+`ActionCallback` も同様に Hilt 非対応のため、`RefreshArticleAction` は `EntryPointAccessors.fromApplication()` で `ArticleWidgetScheduler` を取得し、`requestImmediateUpdate()` を呼ぶだけに留める。抽選ロジックを二重に持たない。
 
 ## 状態の持ち方
 
@@ -87,7 +90,7 @@ Glance の `PreferencesGlanceStateDefinition` に、条文の **identity のみ*
 - `TitleBar` の title は `maxLines = 1` かつ `defaultWeight()` で描画されるため、法令名が横幅に入り切らない場合は自動的に末尾が省略される。追加の実装は不要
 - 条文名は `article.displayTitle(useHalfWidthParentheses)`、本文は `article.fullText(useHalfWidthParentheses)`
 - 本文は `maxLines` を指定せず、ウィジェットの高さに応じて溢れをクリップさせる。全文はタップしてアプリで読む
-- 色は `GlanceTheme.colors`（`glance-material3`）で Dynamic Color に追従する
+- 色は `GlanceTheme.colors`（`androidx.glance.GlanceTheme`、`glance-appwidget` 由来）で Dynamic Color に追従する。`glance-material3` には依存しない
 
 ### タップ挙動
 
@@ -105,7 +108,13 @@ val widgetUpdateIntervalMinutes: Int = 60,
 
 設定変更時に `ArticleWidgetScheduler.schedule()` を呼び直す。スケジューラは `ArticleNotificationScheduler` と同型で、`PeriodicWorkRequest`・15 分下限・`ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE` を用いる。
 
-ウィジェットが 1 つも配置されていない間は Worker をスケジュールしない（`onEnabled` / `onDisabled` で制御する）。
+ウィジェットが 1 つも配置されていない間は Worker をスケジュールしない。スケジュールの制御は次の経路から行う。
+
+- `ArticleWidgetReceiver.onEnabled` — 最初の 1 個目のウィジェットが配置されたときに定期更新をスケジュールする
+- `ArticleWidgetReceiver.onUpdate` — 2 個目以降のウィジェット配置時に呼ばれる唯一の経路のため、ここで即時更新をリクエストし新規ウィジェットが空表示のまま放置されないようにする（`onEnabled` は最初の 1 個目にしか反応しない）
+- `ArticleWidgetReceiver.onDisabled` — 最後のウィジェットが削除されたときに定期更新をキャンセルする
+- `TokidokiRoppouApplication.onCreate` — アプリ起動時、ウィジェットが既に配置されていれば定期更新をスケジュールし直す
+- `SettingsScreenViewModel.setWidgetUpdateInterval` — 設定画面で更新間隔が変更されたときに再スケジュールする
 
 ## エラー処理
 
@@ -135,7 +144,7 @@ Compose BOM には含まれないため個別に管理する。minSdk 28 は Gla
 ## 検証
 
 - `ApplicationSettingsRepositoryImplTest` に `widgetUpdateIntervalMinutes` の永続化テストを追加する
-- `./gradlew testStagingDebugUnitTest`
+- `./gradlew test`
 - `./gradlew lintStagingDebug`
 - 実機にウィジェットを配置し、初期表示・リロード・タップ遷移を録画とスクリーンショットで確認する
 
