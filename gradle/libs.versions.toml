@@ -21,7 +21,7 @@ room = "2.8.4"
 google-services = "4.5.0"
 firebase-appdistribution = "5.3.0"
 firebase-crashlytics = "3.0.8"
-firebase-bom = "34.17.0"
+firebase-bom = "34.18.0"
 markdown-renderer = "0.44.0"
 
 [libraries]
