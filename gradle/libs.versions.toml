@@ -20,7 +20,7 @@ hilt-work = "1.4.0"
 room = "2.8.4"
 google-services = "4.5.0"
 firebase-appdistribution = "5.3.0"
-firebase-crashlytics = "3.0.7"
+firebase-crashlytics = "3.0.8"
 firebase-bom = "34.17.0"
 markdown-renderer = "0.44.0"
 
