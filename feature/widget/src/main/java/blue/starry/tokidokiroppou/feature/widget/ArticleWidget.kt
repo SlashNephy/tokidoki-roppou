@@ -22,6 +22,7 @@ import blue.starry.tokidokiroppou.core.data.notification.ArticleNotificationSend
 import blue.starry.tokidokiroppou.core.domain.model.Article
 import blue.starry.tokidokiroppou.core.domain.model.LawId
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
@@ -45,9 +46,14 @@ class ArticleWidget : GlanceAppWidget() {
 
         val initialPreferences = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
         val initialArticleState = resolveArticleState(context, entryPoint, initialPreferences)
-        val initialUseHalfWidthParentheses = runCatching {
+        val initialUseHalfWidthParentheses = try {
             entryPoint.applicationSettingsRepository().get().useHalfWidthParentheses
-        }.getOrDefault(false)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to read settings for widget")
+            false
+        }
 
         provideContent {
             val preferences = currentState<Preferences>()
@@ -112,24 +118,35 @@ class ArticleWidget : GlanceAppWidget() {
                 preferences[ArticleWidgetStateKeys.SUPPLEMENTARY_PROVISION_LABEL]
                     ?.takeIf { it.isNotEmpty() }
 
+            // CancellationException を握り潰すと、キャンセル済みの LaunchedEffect が
+            // フォールバック状態を書き戻してしまうため、必ず再スローする。
             val article = if (lawId != null && articleNumber != null) {
-                runCatching {
+                try {
                     entryPoint.lawRepository().getArticle(
                         lawId = LawId(lawId),
                         articleNumber = articleNumber,
                         supplementaryProvisionLabel = supplementaryProvisionLabel,
                     )
-                }.onFailure { e ->
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
                     Timber.e(e, "Failed to resolve article for widget")
-                }.getOrNull()
+                    null
+                }
             } else {
                 null
             }
 
             val lawDisplayName = article?.let {
-                runCatching { entryPoint.lawCatalogRepository().getLaw(it.lawId)?.displayName }
-                    .getOrNull()
-                    ?: it.lawId.value
+                val displayName = try {
+                    entryPoint.lawCatalogRepository().getLaw(it.lawId)?.displayName
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to resolve law name for widget")
+                    null
+                }
+                displayName ?: it.lawId.value
             } ?: context.getString(R.string.widget_label)
 
             return ArticleState(article, lawDisplayName)
