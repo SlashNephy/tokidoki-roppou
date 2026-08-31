@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 
 package blue.starry.tokidokiroppou.feature.settings.ui
 
@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,8 +30,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -58,6 +63,7 @@ import blue.starry.tokidokiroppou.core.domain.model.LawCategory
 import blue.starry.tokidokiroppou.core.domain.model.LawCode
 import blue.starry.tokidokiroppou.core.domain.model.LawId
 import blue.starry.tokidokiroppou.core.domain.model.LawMetadata
+import blue.starry.tokidokiroppou.core.domain.model.QuietHours
 import blue.starry.tokidokiroppou.core.domain.model.normalizeDisplay
 import blue.starry.tokidokiroppou.core.ui.component.SettingItem
 import blue.starry.tokidokiroppou.core.ui.component.SettingSection
@@ -100,6 +106,8 @@ fun SettingsScreen(
             onUseHalfWidthParenthesesChanged = viewModel::setUseHalfWidthParentheses,
             onExcludeSupplementaryProvisionsChanged = viewModel::setExcludeSupplementaryProvisions,
             onWidgetUpdateIntervalChanged = viewModel::setWidgetUpdateInterval,
+            onQuietHoursEnabledChanged = viewModel::setQuietHoursEnabled,
+            onQuietHoursChanged = viewModel::setQuietHours,
             onClearCacheAndRefresh = viewModel::clearCacheAndRefresh,
         )
     }
@@ -123,6 +131,8 @@ private fun SettingsContent(
     onUseHalfWidthParenthesesChanged: (Boolean) -> Unit,
     onExcludeSupplementaryProvisionsChanged: (Boolean) -> Unit,
     onWidgetUpdateIntervalChanged: (Int) -> Unit,
+    onQuietHoursEnabledChanged: (Boolean) -> Unit,
+    onQuietHoursChanged: (Int, Int) -> Unit,
     onClearCacheAndRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -160,6 +170,68 @@ private fun SettingsContent(
                         onSelect = onIntervalChanged,
                         onDismiss = { showIntervalDialog = false },
                     )
+                }
+
+                SettingItem(
+                    headline = "夜間は通知しない",
+                    supporting = if (settings.isQuietHoursEnabled) {
+                        "${QuietHours.formatMinutesOfDay(settings.quietHours.startMinutesOfDay)} 〜 " +
+                            QuietHours.formatMinutesOfDay(settings.quietHours.endMinutesOfDay)
+                    } else {
+                        "指定した時間帯は条文を通知しません"
+                    },
+                    leadingIcon = Icons.Default.Bedtime,
+                    trailing = {
+                        Switch(
+                            checked = settings.isQuietHoursEnabled,
+                            onCheckedChange = onQuietHoursEnabledChanged,
+                        )
+                    },
+                    onClick = {
+                        onQuietHoursEnabledChanged(!settings.isQuietHoursEnabled)
+                    },
+                )
+
+                if (settings.isQuietHoursEnabled) {
+                    var showQuietHoursStartDialog by remember { mutableStateOf(false) }
+                    var showQuietHoursEndDialog by remember { mutableStateOf(false) }
+
+                    SettingItem(
+                        headline = "開始時刻",
+                        supporting = QuietHours.formatMinutesOfDay(settings.quietHours.startMinutesOfDay),
+                        leadingIcon = Icons.Default.Schedule,
+                        onClick = { showQuietHoursStartDialog = true },
+                    )
+                    if (showQuietHoursStartDialog) {
+                        TimePickerDialog(
+                            title = "通知を停止する時刻",
+                            initialMinutesOfDay = settings.quietHours.startMinutesOfDay,
+                            // 開始と終了が同値だと空区間になり抑止されなくなるため、同値の保存を禁止する
+                            forbiddenMinutesOfDay = settings.quietHours.endMinutesOfDay,
+                            onConfirm = { minutesOfDay ->
+                                onQuietHoursChanged(minutesOfDay, settings.quietHours.endMinutesOfDay)
+                            },
+                            onDismiss = { showQuietHoursStartDialog = false },
+                        )
+                    }
+
+                    SettingItem(
+                        headline = "終了時刻",
+                        supporting = QuietHours.formatMinutesOfDay(settings.quietHours.endMinutesOfDay),
+                        leadingIcon = Icons.Default.Schedule,
+                        onClick = { showQuietHoursEndDialog = true },
+                    )
+                    if (showQuietHoursEndDialog) {
+                        TimePickerDialog(
+                            title = "通知を再開する時刻",
+                            initialMinutesOfDay = settings.quietHours.endMinutesOfDay,
+                            forbiddenMinutesOfDay = settings.quietHours.startMinutesOfDay,
+                            onConfirm = { minutesOfDay ->
+                                onQuietHoursChanged(settings.quietHours.startMinutesOfDay, minutesOfDay)
+                            },
+                            onDismiss = { showQuietHoursEndDialog = false },
+                        )
+                    }
                 }
 
                 SettingItem(
@@ -374,6 +446,55 @@ private fun IntervalPickerDialog(
             }
         },
         confirmButton = {},
+    )
+}
+
+@Composable
+private fun TimePickerDialog(
+    title: String,
+    initialMinutesOfDay: Int,
+    forbiddenMinutesOfDay: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialMinutesOfDay / 60,
+        initialMinute = initialMinutesOfDay % 60,
+        is24Hour = true,
+    )
+    val selectedMinutesOfDay = timePickerState.hour * 60 + timePickerState.minute
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                TimePicker(state = timePickerState)
+                if (selectedMinutesOfDay == forbiddenMinutesOfDay) {
+                    Text(
+                        text = "開始時刻と終了時刻は同じにできません",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(selectedMinutesOfDay)
+                    onDismiss()
+                },
+                enabled = selectedMinutesOfDay != forbiddenMinutesOfDay,
+            ) {
+                Text("決定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("キャンセル")
+            }
+        },
     )
 }
 

@@ -176,6 +176,18 @@ class SettingsScreenViewModel @Inject constructor(
         }
     }
 
+    fun setQuietHoursEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setQuietHoursEnabled(enabled)
+        }
+    }
+
+    fun setQuietHours(startMinutesOfDay: Int, endMinutesOfDay: Int) {
+        viewModelScope.launch {
+            settingsRepository.setQuietHours(startMinutesOfDay, endMinutesOfDay)
+        }
+    }
+
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
