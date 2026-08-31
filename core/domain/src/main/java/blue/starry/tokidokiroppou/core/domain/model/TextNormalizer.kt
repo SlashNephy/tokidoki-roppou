@@ -41,12 +41,13 @@ private val subNumberPattern =
     Regex("(条の|項の|号の)([〇一二三四五六七八九十百千万]+)")
 
 // 年数: 「昭和二十三年」→「昭和23年」、「二十年以上」→「20年以上」
+// 「数十年」「何百年」のような概数表現は変換しない。
 private val yearPattern =
-    Regex("([〇一二三四五六七八九十百千万]+)年")
+    Regex("(?<![数何])([〇一二三四五六七八九十百千万]+)年")
 
 // 「三箇年」→「3箇年」
 private val yearDurationPattern =
-    Regex("([〇一二三四五六七八九十百]+)箇年")
+    Regex("(?<![数何])([〇一二三四五六七八九十百千万]+)箇年")
 
 private val lawNumNumberPattern =
     Regex("第([〇一二三四五六七八九十百千万]+)号")

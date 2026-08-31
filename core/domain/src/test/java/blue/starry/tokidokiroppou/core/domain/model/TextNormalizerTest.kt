@@ -32,6 +32,12 @@ class TextNormalizerTest {
     }
 
     @Test
+    fun normalizeDisplayKeepsApproximateYearExpressions() {
+        assertEquals("数十年にわたり", "数十年にわたり".normalizeDisplay())
+        assertEquals("何百年もの間", "何百年もの間".normalizeDisplay())
+    }
+
+    @Test
     fun normalizeDisplayKeepsWordsEndingWithYearCharacter() {
         assertEquals("未成年者は、令和元年から", "未成年者は、令和元年から".normalizeDisplay())
     }
