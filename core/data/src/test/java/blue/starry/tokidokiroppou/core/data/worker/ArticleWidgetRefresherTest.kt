@@ -154,6 +154,10 @@ class ArticleWidgetRefresherTest {
         override suspend fun setExcludeSupplementaryProvisions(enabled: Boolean) = Unit
 
         override suspend fun setWidgetUpdateIntervalMinutes(minutes: Int) = Unit
+
+        override suspend fun setQuietHoursEnabled(enabled: Boolean) = Unit
+
+        override suspend fun setQuietHours(startMinutesOfDay: Int, endMinutesOfDay: Int) = Unit
     }
 
     private class FakeArticleWidgetUpdater(

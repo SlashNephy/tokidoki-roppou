@@ -20,4 +20,8 @@ interface ApplicationSettingsRepository {
     suspend fun setExcludeSupplementaryProvisions(enabled: Boolean)
 
     suspend fun setWidgetUpdateIntervalMinutes(minutes: Int)
+
+    suspend fun setQuietHoursEnabled(enabled: Boolean)
+
+    suspend fun setQuietHours(startMinutesOfDay: Int, endMinutesOfDay: Int)
 }
