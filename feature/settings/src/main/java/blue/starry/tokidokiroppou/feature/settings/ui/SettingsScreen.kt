@@ -32,6 +32,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -203,7 +204,7 @@ private fun SettingsContent(
                         onClick = { showQuietHoursStartDialog = true },
                     )
                     if (showQuietHoursStartDialog) {
-                        TimePickerDialog(
+                        QuietHoursTimePickerDialog(
                             title = "通知を停止する時刻",
                             initialMinutesOfDay = settings.quietHours.startMinutesOfDay,
                             // 開始と終了が同値だと空区間になり抑止されなくなるため、同値の保存を禁止する
@@ -222,7 +223,7 @@ private fun SettingsContent(
                         onClick = { showQuietHoursEndDialog = true },
                     )
                     if (showQuietHoursEndDialog) {
-                        TimePickerDialog(
+                        QuietHoursTimePickerDialog(
                             title = "通知を再開する時刻",
                             initialMinutesOfDay = settings.quietHours.endMinutesOfDay,
                             forbiddenMinutesOfDay = settings.quietHours.startMinutesOfDay,
@@ -450,7 +451,7 @@ private fun IntervalPickerDialog(
 }
 
 @Composable
-private fun TimePickerDialog(
+private fun QuietHoursTimePickerDialog(
     title: String,
     initialMinutesOfDay: Int,
     forbiddenMinutesOfDay: Int,
@@ -464,21 +465,11 @@ private fun TimePickerDialog(
     )
     val selectedMinutesOfDay = timePickerState.hour * 60 + timePickerState.minute
 
-    AlertDialog(
+    // 横向きでダイヤルが AlertDialog の最大幅に収まらないため、
+    // 横向きレイアウトに対応した material3 の TimePickerDialog を使用する
+    TimePickerDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = {
-            Column {
-                TimePicker(state = timePickerState)
-                if (selectedMinutesOfDay == forbiddenMinutesOfDay) {
-                    Text(
-                        text = "開始時刻と終了時刻は同じにできません",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        },
         confirmButton = {
             TextButton(
                 onClick = {
@@ -495,7 +486,16 @@ private fun TimePickerDialog(
                 Text("キャンセル")
             }
         },
-    )
+    ) {
+        TimePicker(state = timePickerState)
+        if (selectedMinutesOfDay == forbiddenMinutesOfDay) {
+            Text(
+                text = "開始時刻と終了時刻は同じにできません",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
 }
 
 @Composable
