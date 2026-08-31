@@ -209,6 +209,12 @@ class LawCatalogRepositoryImplTest {
 
         override suspend fun setWidgetUpdateIntervalMinutes(minutes: Int) {
         }
+
+        override suspend fun setQuietHoursEnabled(enabled: Boolean) {
+        }
+
+        override suspend fun setQuietHours(startMinutesOfDay: Int, endMinutesOfDay: Int) {
+        }
     }
 
 }
