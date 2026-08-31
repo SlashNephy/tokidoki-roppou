@@ -40,9 +40,14 @@ private val legalNumberPattern =
 private val subNumberPattern =
     Regex("(条の|項の|号の)([〇一二三四五六七八九十百千万]+)")
 
-// LawNum 用: 「昭和二十三年法律第百二十号」→「昭和23年法律第120号」
-private val eraYearPattern =
-    Regex("(明治|大正|昭和|平成|令和)([〇一二三四五六七八九十百千万]+)年")
+// 年数: 「昭和二十三年」→「昭和23年」、「二十年以上」→「20年以上」
+// 「数十年」「何百年」のような概数表現は変換しない。
+private val yearPattern =
+    Regex("(?<![数何])([〇一二三四五六七八九十百千万]+)年")
+
+// 「三箇年」→「3箇年」
+private val yearDurationPattern =
+    Regex("(?<![数何])([〇一二三四五六七八九十百千万]+)箇年")
 
 private val lawNumNumberPattern =
     Regex("第([〇一二三四五六七八九十百千万]+)号")
@@ -73,9 +78,6 @@ private fun String.convertLegalKanjiNumbers(): String {
     result = subNumberPattern.replace(result) { match ->
         "${match.groupValues[1]}${kanjiToArabic(match.groupValues[2])}"
     }
-    result = eraYearPattern.replace(result) { match ->
-        "${match.groupValues[1]}${kanjiToArabic(match.groupValues[2])}年"
-    }
     result = lawNumNumberPattern.replace(result) { match ->
         "第${kanjiToArabic(match.groupValues[1])}号"
     }
@@ -90,6 +92,12 @@ private fun String.convertLegalKanjiNumbers(): String {
     }
     result = fractionPattern.replace(result) { match ->
         "${kanjiToArabic(match.groupValues[1])}分の${kanjiToArabic(match.groupValues[2])}"
+    }
+    result = yearPattern.replace(result) { match ->
+        "${kanjiToArabic(match.groupValues[1])}年"
+    }
+    result = yearDurationPattern.replace(result) { match ->
+        "${kanjiToArabic(match.groupValues[1])}箇年"
     }
     result = dayDurationPattern.replace(result) { match ->
         "${kanjiToArabic(match.groupValues[1])}日"
