@@ -10,6 +10,8 @@ import blue.starry.tokidokiroppou.core.domain.repository.LawCatalogRepository
 import blue.starry.tokidokiroppou.core.domain.repository.LawRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.time.Clock
+import java.time.LocalTime
 import timber.log.Timber
 
 @HiltWorker
@@ -20,6 +22,7 @@ class ArticleNotificationWorker @AssistedInject constructor(
     private val lawCatalogRepository: LawCatalogRepository,
     private val settingsRepository: ApplicationSettingsRepository,
     private val notificationSender: ArticleNotificationSender,
+    private val clock: Clock,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -28,6 +31,12 @@ class ArticleNotificationWorker @AssistedInject constructor(
         val settings = settingsRepository.get()
         if (!settings.isNotificationEnabled) {
             Timber.d("Notifications disabled, skipping")
+            return Result.success()
+        }
+
+        // 抑止時間帯では条文を抽選せずに終了する。次の周期を待ち、埋め合わせの通知は行わない
+        if (settings.shouldSuppressNotificationAt(currentMinutesOfDay())) {
+            Timber.d("In quiet hours, skipping")
             return Result.success()
         }
 
@@ -40,6 +49,11 @@ class ArticleNotificationWorker @AssistedInject constructor(
         val lawDisplayName = lawCatalogRepository.getLaw(article.lawId)?.displayName ?: article.lawId.value
         notificationSender.sendArticleNotification(article, lawDisplayName, settings.useHalfWidthParentheses)
         return Result.success()
+    }
+
+    private fun currentMinutesOfDay(): Int {
+        val now = LocalTime.now(clock)
+        return now.hour * 60 + now.minute
     }
 
     companion object {
