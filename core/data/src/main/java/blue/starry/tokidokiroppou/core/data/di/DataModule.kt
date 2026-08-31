@@ -195,8 +195,8 @@ object DataProvidesModule {
     }
 
     @Provides
-    @Singleton
     fun provideClock(): Clock {
+        // Worker 実行ごとに新しい Clock インスタンスが得られ、タイムゾーン変更に追従できるよう @Singleton を付けない
         return Clock.systemDefaultZone()
     }
 }

@@ -117,6 +117,7 @@ class ApplicationSettingsRepositoryImpl @Inject constructor(
     }
 
     // 手動での書き換えや将来の仕様変更で範囲外の値が入っていた場合に備え、既定値へフォールバックする
+    // 片方だけ不正な場合も、整合性を保つため両方を既定値に戻す
     private fun Preferences.readQuietHours(): QuietHours {
         val start = this[KEY_QUIET_HOURS_START_MINUTES] ?: QuietHours.DEFAULT.startMinutesOfDay
         val end = this[KEY_QUIET_HOURS_END_MINUTES] ?: QuietHours.DEFAULT.endMinutesOfDay

@@ -1,5 +1,7 @@
 package blue.starry.tokidokiroppou.core.domain.model
 
+import java.util.Locale
+
 /**
  * 通知を抑止する時間帯。
  *
@@ -39,7 +41,7 @@ data class QuietHours(
         fun formatMinutesOfDay(minutesOfDay: Int): String {
             val hour = minutesOfDay / 60
             val minute = minutesOfDay % 60
-            return "%02d:%02d".format(hour, minute)
+            return String.format(Locale.ROOT, "%02d:%02d", hour, minute)
         }
     }
 }
