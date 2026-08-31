@@ -150,6 +150,8 @@ Expected: コンパイルエラー (`Unresolved reference: QuietHours`)
 ```kotlin
 package blue.starry.tokidokiroppou.core.domain.model
 
+import java.util.Locale
+
 /**
  * 通知を抑止する時間帯。
  *
@@ -189,7 +191,7 @@ data class QuietHours(
         fun formatMinutesOfDay(minutesOfDay: Int): String {
             val hour = minutesOfDay / 60
             val minute = minutesOfDay % 60
-            return "%02d:%02d".format(hour, minute)
+            return String.format(Locale.ROOT, "%02d:%02d", hour, minute)
         }
     }
 }
@@ -535,8 +537,8 @@ EOF
 
 ```kotlin
     @Provides
-    @Singleton
     fun provideClock(): Clock {
+        // Worker 実行ごとに新しい Clock インスタンスが得られ、タイムゾーン変更に追従できるよう @Singleton を付けない
         return Clock.systemDefaultZone()
     }
 ```
@@ -893,7 +895,7 @@ Expected: `In quiet hours, skipping` が出力され、通知は表示されな�
 adb -s <SERIAL> shell dumpsys jobscheduler | grep -A 5 "blue.starry.tokidokiroppou.staging"
 ```
 
-4. 抑止時間帯を現在時刻を含まない範囲に戻し、同じ手順で通知が表示されることを確認する (抑止が過剰でないことの確認)
+1. 抑止時間帯を現在時刻を含まない範囲に戻し、同じ手順で通知が表示されることを確認する (抑止が過剰でないことの確認)
 
 Expected: 条文の通知が表示される
 

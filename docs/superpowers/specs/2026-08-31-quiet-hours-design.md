@@ -85,7 +85,7 @@ val quietHours: QuietHours = QuietHours(startMinutesOfDay = 23 * 60, endMinutesO
 `ArticleNotificationWorker.doWork()` の `isNotificationEnabled` チェック直後に判定を挿入する。
 
 ```kotlin
-if (settings.isQuietHoursEnabled && settings.quietHours.contains(clock.nowMinutesOfDay())) {
+if (settings.shouldSuppressNotificationAt(currentMinutesOfDay())) {
     Timber.d("In quiet hours, skipping")
     return Result.success()
 }
@@ -104,9 +104,11 @@ if (settings.isQuietHoursEnabled && settings.quietHours.contains(clock.nowMinute
 - 有効時のみ「開始時刻」「終了時刻」の 2 項目を表示し、それぞれ supporting に `HH:mm` を表示。タップで Material3 `TimePicker` を載せた `AlertDialog` を開く
 - 開始と終了が同値になる保存は弾く (ダイアログの確定ボタンを無効化する)
 
+ダイアログは Material3 の公開 `TimePickerDialog` を使う。`AlertDialog` の `text` スロットに `TimePicker` を入れると、横向きでダイヤルがダイアログ幅からはみ出して切れるため。
+
 ### 5. データフロー
 
-```
+```text
 SettingsScreen -> SettingsScreenViewModel -> ApplicationSettingsRepository -> DataStore
                                                                                 |
                                                       ArticleNotificationWorker -+
